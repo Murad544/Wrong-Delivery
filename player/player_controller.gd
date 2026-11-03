@@ -17,8 +17,11 @@ extends CharacterBody3D
 @export var is_carrying_heavy_cargo: bool = false
 
 var held_cargo: CargoBody = null
+var seated_vehicle: TruckController = null
+var seated_role: String = ""
 var _gravity: float = float(ProjectSettings.get_setting("physics/3d/default_gravity", 9.8))
 
+@onready var collision_shape: CollisionShape3D = $CollisionShape3D
 @onready var visual_root: Node3D = $VisualRoot
 @onready var player_camera: PlayerCamera = $PlayerCamera
 @onready var interaction_controller: InteractionController = $InteractionController
@@ -26,12 +29,21 @@ var _gravity: float = float(ProjectSettings.get_setting("physics/3d/default_grav
 
 func _ready() -> void:
 	_ensure_input_actions()
-	collision_mask = 1 | 8 # Collide with Environment (1) and Cargo (8)
+	rotation = Vector3.ZERO
+	collision_mask = 1 | 8 | 16 # Collide with Environment (1), Cargo (8), and Vehicle (16)
 	if interaction_controller != null:
 		interaction_controller.setup(self, player_camera)
 
 
 func _physics_process(delta: float) -> void:
+	# Keep root rotation strictly zero so child nodes never inherit unexpected yaw/pitch/roll
+	if rotation != Vector3.ZERO:
+		rotation = Vector3.ZERO
+
+	if is_seated_in_vehicle():
+		velocity = Vector3.ZERO
+		return
+
 	var input_vector: Vector2 = Input.get_vector(
 		"move_left",
 		"move_right",
@@ -98,7 +110,46 @@ func get_target_move_speed(wants_sprint: bool) -> float:
 
 
 func can_jump() -> bool:
-	return not is_carrying_heavy_cargo and not is_holding_any_cargo()
+	return not is_carrying_heavy_cargo and not is_holding_any_cargo() and not is_seated_in_vehicle()
+
+
+func is_seated_in_vehicle() -> bool:
+	return seated_vehicle != null and is_instance_valid(seated_vehicle)
+
+
+func on_entered_vehicle(vehicle: TruckController, role: String) -> void:
+	seated_vehicle = vehicle
+	seated_role = role
+	velocity = Vector3.ZERO
+	rotation = Vector3.ZERO
+	if collision_shape != null:
+		collision_shape.disabled = true
+	if visual_root != null:
+		visual_root.visible = false
+	if player_camera != null:
+		player_camera.set_vehicle_camera_mode(true, vehicle)
+
+
+func on_exited_vehicle(vehicle: TruckController, exit_world_pos: Vector3) -> void:
+	var exit_yaw: float = vehicle.global_rotation.y if vehicle != null else 0.0
+	seated_vehicle = null
+	seated_role = ""
+	velocity = Vector3.ZERO
+	global_transform = Transform3D(Basis.IDENTITY, exit_world_pos)
+	if visual_root != null:
+		visual_root.visible = true
+		visual_root.rotation = Vector3(0.0, exit_yaw, 0.0)
+	if collision_shape != null:
+		collision_shape.disabled = false
+	if player_camera != null:
+		player_camera.set_vehicle_camera_mode(false, null)
+		player_camera.align_yaw_to_world_angle(exit_yaw)
+
+
+func try_exit_seated_vehicle() -> Dictionary:
+	if not is_seated_in_vehicle():
+		return {"success": false, "message": ""}
+	return seated_vehicle.try_exit_vehicle(self)
 
 
 func is_holding_any_cargo() -> bool:

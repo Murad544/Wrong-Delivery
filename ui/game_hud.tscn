@@ -43,11 +43,11 @@ theme_override_constants/separation = 4
 
 [node name="TitleLabel" type="Label" parent="RootMargin/TopLeftPanel/VBox"]
 layout_mode = 2
-text = "Wrong Delivery — Milestone 02 Cargo Physics"
+text = "Wrong Delivery — Milestone 03 Truck & Cargo Bay"
 
 [node name="ControlsLabel" type="Label" parent="RootMargin/TopLeftPanel/VBox"]
 layout_mode = 2
-text = "WASD: Move | Shift: Sprint | Space: Jump | E: Grab/Drop | Q/R: Rotate"
+text = "WASD: Move/Drive | E: Grab/Drop/Seat | F: Strap Cargo | Space: Jump/Brake"
 
 [node name="StatusLabel" type="Label" parent="RootMargin/TopLeftPanel/VBox"]
 layout_mode = 2

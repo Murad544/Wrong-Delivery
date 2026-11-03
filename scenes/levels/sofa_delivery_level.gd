@@ -8,6 +8,7 @@ var _cargo_items: Array[CargoBody] = []
 @onready var player: PlayerController = $Player
 @onready var game_hud: GameHUD = $GameHUD
 @onready var spawn_point: Marker3D = $SpawnPoint
+@onready var delivery_truck: TruckController = get_node_or_null("DeliveryTruck") as TruckController
 
 
 func _ready() -> void:
@@ -15,6 +16,8 @@ func _ready() -> void:
 		player.global_transform = spawn_point.global_transform
 	if game_hud != null and player != null:
 		game_hud.bind_to_player(player)
+	if game_hud != null and delivery_truck != null:
+		game_hud.register_truck(delivery_truck)
 
 	_register_level_cargo()
 
@@ -32,13 +35,16 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func reset_all_cargo() -> void:
+	if delivery_truck != null and is_instance_valid(delivery_truck):
+		delivery_truck.reset_to_spawn()
+
 	for cargo: CargoBody in _cargo_items:
 		if cargo != null and is_instance_valid(cargo):
 			cargo.reset_to_spawn()
 			if cargo.cargo_damage != null:
 				cargo.cargo_damage.reset_durability()
 	if game_hud != null:
-		game_hud.show_feedback_message("All cargo reset to checkpoint", false)
+		game_hud.show_feedback_message("Truck and all cargo reset to checkpoint", false)
 
 
 func get_cargo_items() -> Array[CargoBody]:

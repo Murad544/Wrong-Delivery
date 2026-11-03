@@ -17,6 +17,7 @@ signal carrier_status_changed(cargo: CargoBody, carrier_count: int, required_car
 @export var cargo_data: CargoData = null
 
 var current_state: CargoState = CargoState.FREE
+var current_cargo_bay: Node3D = null
 var _spawn_transform: Transform3D = Transform3D.IDENTITY
 var _prev_linear_velocity: Vector3 = Vector3.ZERO
 var _spawn_grace_timer: float = 0.35
@@ -32,6 +33,7 @@ func _ready() -> void:
 	_spawn_transform = global_transform
 	collision_layer = 8 # Layer 4: Cargo (bitmask value 8)
 	collision_mask = 1 | 2 | 8 | 16 # Environment (1) | Player (2) | Cargo (8) | Vehicle (16)
+	freeze_mode = RigidBody3D.FREEZE_MODE_KINEMATIC
 	contact_monitor = true
 	max_contacts_reported = 4
 	can_sleep = false
@@ -156,23 +158,51 @@ func transition_to(new_state: CargoState) -> bool:
 
 	match current_state:
 		CargoState.FREE:
+			_spawn_grace_timer = maxf(_spawn_grace_timer, 0.2)
+			collision_layer = 8
+			collision_mask = 1 | 2 | 8 | 16
 			freeze = false
 			linear_damp = 0.2
 			angular_damp = 0.6
 		CargoState.CARRIED:
+			_spawn_grace_timer = maxf(_spawn_grace_timer, 0.2)
+			collision_layer = 8
+			collision_mask = 1 | 2 | 8 | 16
 			freeze = false
 			linear_damp = 1.5
 			angular_damp = 3.0
-		CargoState.SECURED:
+		CargoState.LOADED_UNSECURED:
 			_spawn_grace_timer = 0.25
+			collision_layer = 8
+			collision_mask = 0
 			linear_velocity = Vector3.ZERO
 			angular_velocity = Vector3.ZERO
+			_prev_linear_velocity = Vector3.ZERO
 			freeze = true
+		CargoState.SECURED:
+			_spawn_grace_timer = 0.25
+			collision_layer = 8
+			collision_mask = 0
+			linear_velocity = Vector3.ZERO
+			angular_velocity = Vector3.ZERO
+			_prev_linear_velocity = Vector3.ZERO
+			freeze = true
+		CargoState.UNLOADING:
+			_spawn_grace_timer = 0.3
+			collision_layer = 8
+			collision_mask = 1 | 2 | 8 | 16
+			linear_velocity = Vector3.ZERO
+			angular_velocity = Vector3.ZERO
+			_prev_linear_velocity = Vector3.ZERO
+			freeze = false
 		CargoState.DELIVERED:
 			if carry_controller != null:
 				carry_controller.detach_all("Delivered")
+			collision_layer = 8
+			collision_mask = 0
 			linear_velocity = Vector3.ZERO
 			angular_velocity = Vector3.ZERO
+			_prev_linear_velocity = Vector3.ZERO
 			freeze = true
 
 	state_changed.emit(old_state, current_state)
@@ -217,8 +247,18 @@ func interact_with_handle(handle_id: int, actor: Node3D) -> String:
 	if handle != null and handle.is_occupied() and handle.occupying_actor != actor:
 		return "Handle is already occupied"
 
+	if current_state == CargoState.LOADED_UNSECURED:
+		if current_cargo_bay != null and current_cargo_bay.has_method("can_unload_cargo"):
+			var unload_check: Dictionary = current_cargo_bay.call("can_unload_cargo")
+			if not bool(unload_check.get("allowed", true)):
+				return String(unload_check.get("reason", "Cannot unload while truck is moving"))
+		transition_to(CargoState.UNLOADING)
+
 	if not can_transition_to(CargoState.CARRIED) and current_state != CargoState.CARRIED:
 		return "Cargo cannot be carried in state %s" % get_state_name(current_state)
+
+	if current_cargo_bay != null and current_cargo_bay.has_method("notify_cargo_unloaded"):
+		current_cargo_bay.call("notify_cargo_unloaded", self)
 
 	var attached: bool = carry_controller.attach_carrier(handle_id, actor)
 	if not attached:
@@ -243,8 +283,13 @@ func release_actor(actor: Node3D, reason: String = "Released") -> bool:
 func reset_to_spawn() -> void:
 	if carry_controller != null:
 		carry_controller.detach_all("Reset to checkpoint")
+	if current_cargo_bay != null and current_cargo_bay.has_method("notify_cargo_unloaded"):
+		current_cargo_bay.call("notify_cargo_unloaded", self)
+	current_cargo_bay = null
 
 	_spawn_grace_timer = 0.4
+	collision_layer = 8
+	collision_mask = 1 | 2 | 8 | 16
 	freeze = false
 	linear_velocity = Vector3.ZERO
 	angular_velocity = Vector3.ZERO
@@ -255,6 +300,14 @@ func reset_to_spawn() -> void:
 	current_state = CargoState.FREE
 	if old_state != current_state:
 		state_changed.emit(old_state, current_state)
+
+
+func apply_external_impact(impact_speed: float) -> float:
+	if cargo_damage == null:
+		return 0.0
+	if current_state == CargoState.DELIVERED:
+		return 0.0
+	return cargo_damage.process_impact(impact_speed, true)
 
 
 func _evaluate_collision_impacts() -> void:

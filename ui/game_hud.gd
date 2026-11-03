@@ -7,6 +7,7 @@ extends CanvasLayer
 var _feedback_timer: float = 0.0
 var _tracked_player: PlayerController = null
 var _tracked_cargos: Array[CargoBody] = []
+var _tracked_truck: TruckController = null
 
 @onready var prompt_panel: PanelContainer = $RootMargin/CenterBottom/PromptPanel
 @onready var prompt_label: Label = $RootMargin/CenterBottom/PromptPanel/PromptLabel
@@ -73,6 +74,20 @@ func register_cargo(cargo: CargoBody) -> void:
 	)
 
 
+func register_truck(truck: TruckController) -> void:
+	if truck == null:
+		return
+	_tracked_truck = truck
+	if truck.cargo_bay != null:
+		truck.cargo_bay.cargo_loaded.connect(
+			func(c: CargoBody) -> void:
+				show_feedback_message(
+					"Loaded %s into truck bay (Press F at rear strap anchor to secure)" % c.get_display_name(),
+					false
+				)
+		)
+
+
 func set_interaction_prompt(prompt_text: String, is_valid: bool) -> void:
 	if prompt_panel == null or prompt_label == null:
 		return
@@ -102,7 +117,7 @@ func _on_mouse_capture_changed(is_captured: bool) -> void:
 	if status_label == null:
 		return
 	if is_captured:
-		status_label.text = "Mouse: Captured (Esc to release) | F3: Debug | F4: Reset Cargo"
+		status_label.text = "Mouse: Captured (Esc) | F3: HUD | F4: Reset All | F5: Switch Scene"
 	else:
 		status_label.text = "Mouse: Released (Click or Esc to capture)"
 
@@ -111,37 +126,44 @@ func _refresh_diagnostics_text() -> void:
 	if debug_label == null:
 		return
 
+	var lines: Array[String] = []
+
 	var focus_cargo: CargoBody = _select_focus_cargo()
-	if focus_cargo == null:
-		debug_label.text = "No cargo registered in scene."
-		return
+	if focus_cargo != null:
+		var dur_cur: float = focus_cargo.cargo_damage.current_durability if focus_cargo.cargo_damage != null else 0.0
+		var dur_max: float = focus_cargo.cargo_damage.max_durability if focus_cargo.cargo_damage != null else 0.0
+		var last_imp: float = focus_cargo.cargo_damage.last_impact_speed if focus_cargo.cargo_damage != null else 0.0
+		var thresh: float = focus_cargo.cargo_damage.impact_speed_threshold if focus_cargo.cargo_damage != null else 0.0
+		var force_mag: float = focus_cargo.carry_controller.last_applied_force.length() if focus_cargo.carry_controller != null else 0.0
 
-	var dur_cur: float = focus_cargo.cargo_damage.current_durability if focus_cargo.cargo_damage != null else 0.0
-	var dur_max: float = focus_cargo.cargo_damage.max_durability if focus_cargo.cargo_damage != null else 0.0
-	var last_imp: float = focus_cargo.cargo_damage.last_impact_speed if focus_cargo.cargo_damage != null else 0.0
-	var thresh: float = focus_cargo.cargo_damage.impact_speed_threshold if focus_cargo.cargo_damage != null else 0.0
-	var force_mag: float = focus_cargo.carry_controller.last_applied_force.length() if focus_cargo.carry_controller != null else 0.0
+		lines.append("[Cargo]")
+		lines.append("Item: %s (%s)" % [focus_cargo.get_display_name(), CargoBody.get_state_name(focus_cargo.current_state)])
+		lines.append("Durability: %.0f / %.0f" % [dur_cur, dur_max])
+		lines.append("Carriers: %d / %d | Force: %.0f N" % [focus_cargo.get_carrier_count(), focus_cargo.get_required_carriers(), force_mag])
+		lines.append("Last Impact: %.2f m/s (thresh %.1f)" % [last_imp, thresh])
 
-	debug_label.text = (
-		"Item: %s\n"
-		+ "State: %s\n"
-		+ "Durability: %.0f / %.0f\n"
-		+ "Carriers: %d / %d\n"
-		+ "Linear Speed: %.2f m/s\n"
-		+ "Carry Force: %.1f N\n"
-		+ "Last Impact: %.2f m/s (thresh %.1f)"
-	) % [
-		focus_cargo.get_display_name(),
-		CargoBody.get_state_name(focus_cargo.current_state),
-		dur_cur,
-		dur_max,
-		focus_cargo.get_carrier_count(),
-		focus_cargo.get_required_carriers(),
-		focus_cargo.linear_velocity.length(),
-		force_mag,
-		last_imp,
-		thresh,
-	]
+	if _tracked_truck != null and is_instance_valid(_tracked_truck):
+		var spd: float = _tracked_truck.forward_speed
+		var kmh: float = absf(spd) * 3.6
+		var seat_str: String = "On Foot"
+		if _tracked_player != null and _tracked_player.is_seated_in_vehicle():
+			seat_str = _tracked_player.seated_role
+		var bay: CargoBay = _tracked_truck.cargo_bay
+		var bay_count: int = bay.get_loaded_cargos().size() if bay != null else 0
+		var stab_pct: float = (bay.current_stability_ratio * 100.0) if bay != null else 100.0
+		var bay_warn: String = bay.current_warning_text if bay != null else "EMPTY"
+
+		lines.append("")
+		lines.append("[Delivery Truck]")
+		lines.append("Role: %s | Speed: %.1f m/s (%.0f km/h)" % [seat_str, spd, kmh])
+		lines.append("Lat Accel: %.2f m/s² | Handbrake: %s" % [
+			_tracked_truck.lateral_acceleration,
+			"ON" if _tracked_truck.is_handbrake_active else "OFF"
+		])
+		lines.append("Cargo Bay: %d item(s) | Stability: %.0f%%" % [bay_count, stab_pct])
+		lines.append("Bay Status: %s" % bay_warn)
+
+	debug_label.text = "\n".join(lines)
 
 
 func _select_focus_cargo() -> CargoBody:

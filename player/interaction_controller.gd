@@ -43,9 +43,20 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("interact"):
 		if try_interact():
 			get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("secure_cargo"):
+		if try_secure_cargo_action():
+			get_viewport().set_input_as_handled()
 
 
 func try_interact() -> bool:
+	if player_body != null and player_body.has_method("is_seated_in_vehicle") and bool(player_body.call("is_seated_in_vehicle")):
+		var exit_res: Dictionary = player_body.call("try_exit_seated_vehicle")
+		var ok: bool = bool(exit_res.get("success", false))
+		var msg: String = String(exit_res.get("message", ""))
+		interaction_feedback.emit(msg, not ok)
+		_update_best_target(true)
+		return true
+
 	if player_body != null and player_body.has_method("is_holding_any_cargo") and bool(player_body.call("is_holding_any_cargo")):
 		var release_msg: String = String(player_body.call("release_held_cargo"))
 		interaction_feedback.emit(release_msg, false)
@@ -69,6 +80,41 @@ func try_interact() -> bool:
 
 	var message: String = _current_target.perform_interaction(actor)
 	interaction_feedback.emit(message, false)
+	_update_best_target(true)
+	return true
+
+
+func try_secure_cargo_action() -> bool:
+	if player_body != null and player_body.has_method("is_seated_in_vehicle") and bool(player_body.call("is_seated_in_vehicle")):
+		interaction_feedback.emit("Exit the truck cab to strap cargo at the rear bay", true)
+		return true
+
+	if player_body != null and player_body.has_method("is_holding_any_cargo") and bool(player_body.call("is_holding_any_cargo")):
+		interaction_feedback.emit("Drop held cargo in the bay first, then press F to strap", true)
+		return true
+
+	var anchor_target: InteractableTarget = null
+	if _current_target is TruckInteractable and (_current_target as TruckInteractable).role == "CargoAnchor":
+		anchor_target = _current_target
+	else:
+		for candidate: InteractableTarget in _nearby_targets:
+			if candidate is TruckInteractable and (candidate as TruckInteractable).role == "CargoAnchor":
+				var dist: float = global_position.distance_to(candidate.global_position)
+				if dist <= candidate.max_interaction_distance and has_line_of_sight(candidate):
+					anchor_target = candidate
+					break
+
+	if anchor_target == null:
+		return false
+
+	var actor: Node3D = player_body if player_body != null else self
+	var check: Dictionary = anchor_target.can_interact_from(global_position)
+	if not bool(check.get("allowed", false)):
+		interaction_feedback.emit(String(check.get("reason", "Cannot secure cargo")), true)
+		return true
+
+	var msg: String = anchor_target.perform_interaction(actor)
+	interaction_feedback.emit(msg, false)
 	_update_best_target(true)
 	return true
 
@@ -102,6 +148,18 @@ func has_line_of_sight(target: InteractableTarget) -> bool:
 
 
 func _update_best_target(force_emit: bool = false) -> void:
+	if player_body != null and player_body.has_method("is_seated_in_vehicle") and bool(player_body.call("is_seated_in_vehicle")):
+		_current_target = null
+		var role_str: String = String(player_body.get("seated_role"))
+		var vehicle_prompt: String = "E — Exit Truck (%s)  |  WASD: Drive  |  Space: Handbrake" % role_str
+		if role_str == "Passenger":
+			vehicle_prompt = "E — Exit Truck (Passenger)  |  Watch Cargo Stability HUD"
+		if force_emit or vehicle_prompt != _last_prompt_text or not _last_prompt_valid:
+			_last_prompt_text = vehicle_prompt
+			_last_prompt_valid = true
+			prompt_changed.emit(vehicle_prompt, true)
+		return
+
 	if player_body != null and player_body.has_method("is_holding_any_cargo") and bool(player_body.call("is_holding_any_cargo")):
 		_current_target = null
 		var held: CargoBody = player_body.get("held_cargo") as CargoBody

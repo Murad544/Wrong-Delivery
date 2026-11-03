@@ -2,3 +2,8 @@ res://player/interaction_controller.gd
 res://player/player_controller.gd
 res://scenes/levels/sofa_delivery_level.gd
 res://ui/game_hud.gd
+res://cargo/cargo_body.gd
+res://player/player_camera.gd
+res://tests/milestone_03_smoke_test.gd
+res://vehicles/truck_controller.gd
+res://vehicles/cargo_bay.gd

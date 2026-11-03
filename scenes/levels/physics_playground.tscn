@@ -1,10 +1,11 @@
-[gd_scene load_steps=18 format=3]
+[gd_scene load_steps=19 format=3]
 
 [ext_resource type="Script" path="res://scenes/levels/sofa_delivery_level.gd" id="1_level_script"]
 [ext_resource type="PackedScene" path="res://player/player.tscn" id="2_player_scene"]
 [ext_resource type="PackedScene" path="res://ui/game_hud.tscn" id="3_hud_scene"]
 [ext_resource type="PackedScene" path="res://cargo/cargo.tscn" id="4_crate_scene"]
 [ext_resource type="PackedScene" path="res://cargo/sofa_cargo.tscn" id="5_sofa_scene"]
+[ext_resource type="PackedScene" path="res://vehicles/delivery_truck.tscn" id="6_truck_scene"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_pg"]
 sky_top_color = Color(0.26, 0.56, 0.92, 1)
@@ -207,3 +208,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.0, 1.9, -5.6)
 
 [node name="PlaygroundSofa" parent="CargoItems" instance=ExtResource("5_sofa_scene")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.5, 0.25, 1.2)
+
+[node name="DeliveryTruck" parent="." instance=ExtResource("6_truck_scene")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.2, 0.05, 7.0)

@@ -1,0 +1,256 @@
+[gd_scene load_steps=21 format=3]
+
+[ext_resource type="Script" path="res://vehicles/truck_controller.gd" id="1_truck_ctrl"]
+[ext_resource type="Script" path="res://vehicles/cargo_bay.gd" id="2_cargo_bay"]
+[ext_resource type="Script" path="res://vehicles/truck_interactable.gd" id="3_truck_inter"]
+
+[sub_resource type="SphereShape3D" id="Shape_wheel_sphere"]
+radius = 0.4
+
+[sub_resource type="BoxShape3D" id="Shape_upper_chassis"]
+size = Vector3(2.15, 1.5, 2.2)
+
+[sub_resource type="BoxShape3D" id="Shape_bed_floor"]
+size = Vector3(2.2, 0.28, 3.2)
+
+[sub_resource type="BoxShape3D" id="Shape_bed_side"]
+size = Vector3(0.18, 1.35, 3.2)
+
+[sub_resource type="BoxShape3D" id="Shape_rear_ramp"]
+size = Vector3(1.9, 0.12, 1.25)
+
+[sub_resource type="StandardMaterial3D" id="Mat_cab_paint"]
+albedo_color = Color(0.96, 0.65, 0.14, 1)
+roughness = 0.55
+
+[sub_resource type="StandardMaterial3D" id="Mat_cab_glass"]
+albedo_color = Color(0.18, 0.28, 0.38, 1)
+roughness = 0.25
+
+[sub_resource type="StandardMaterial3D" id="Mat_bed_metal"]
+albedo_color = Color(0.32, 0.35, 0.38, 1)
+roughness = 0.85
+
+[sub_resource type="StandardMaterial3D" id="Mat_box_panel"]
+albedo_color = Color(0.95, 0.94, 0.9, 1)
+roughness = 0.7
+
+[sub_resource type="StandardMaterial3D" id="Mat_tire"]
+albedo_color = Color(0.14, 0.15, 0.16, 1)
+roughness = 0.9
+
+[sub_resource type="StandardMaterial3D" id="Mat_strap_yellow"]
+albedo_color = Color(0.98, 0.86, 0.12, 1)
+roughness = 0.4
+
+[sub_resource type="StandardMaterial3D" id="Mat_door_handle"]
+albedo_color = Color(0.2, 0.78, 0.95, 1)
+roughness = 0.35
+
+[sub_resource type="CylinderMesh" id="Mesh_wheel"]
+material = SubResource("Mat_tire")
+top_radius = 0.4
+bottom_radius = 0.4
+height = 0.28
+radial_segments = 16
+
+[sub_resource type="BoxShape3D" id="Shape_cargo_bay_area"]
+size = Vector3(1.85, 1.6, 2.9)
+
+[sub_resource type="SphereShape3D" id="Shape_door_interact"]
+radius = 0.95
+
+[sub_resource type="SphereShape3D" id="Shape_anchor_interact"]
+radius = 1.25
+
+[sub_resource type="BoxMesh" id="Mesh_anchor_box"]
+material = SubResource("Mat_strap_yellow")
+size = Vector3(0.24, 0.34, 0.28)
+
+[node name="DeliveryTruck" type="CharacterBody3D"]
+collision_layer = 16
+collision_mask = 1
+script = ExtResource("1_truck_ctrl")
+
+[node name="WheelColliderFL" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.95, 0.4, -1.6)
+shape = SubResource("Shape_wheel_sphere")
+
+[node name="WheelColliderFR" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.95, 0.4, -1.6)
+shape = SubResource("Shape_wheel_sphere")
+
+[node name="WheelColliderRL" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.95, 0.4, 1.6)
+shape = SubResource("Shape_wheel_sphere")
+
+[node name="WheelColliderRR" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.95, 0.4, 1.6)
+shape = SubResource("Shape_wheel_sphere")
+
+[node name="UpperChassisCollision" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.25, -1.35)
+shape = SubResource("Shape_upper_chassis")
+
+[node name="WalkableBedAndRamp" type="StaticBody3D" parent="."]
+collision_layer = 16
+collision_mask = 0
+
+[node name="BedFloorCollision" type="CollisionShape3D" parent="WalkableBedAndRamp"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.42, 1.4)
+shape = SubResource("Shape_bed_floor")
+
+[node name="BedWallLeftCollision" type="CollisionShape3D" parent="WalkableBedAndRamp"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.01, 1.15, 1.4)
+shape = SubResource("Shape_bed_side")
+
+[node name="BedWallRightCollision" type="CollisionShape3D" parent="WalkableBedAndRamp"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.01, 1.15, 1.4)
+shape = SubResource("Shape_bed_side")
+
+[node name="RearRampCollision" type="CollisionShape3D" parent="WalkableBedAndRamp"]
+transform = Transform3D(1, 0, 0, 0, 0.965926, 0.258819, 0, -0.258819, 0.965926, 0, 0.34, 3.5)
+shape = SubResource("Shape_rear_ramp")
+
+[node name="VisualRoot" type="Node3D" parent="."]
+
+[node name="CabBody" type="CSGBox3D" parent="VisualRoot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.18, -1.25)
+size = Vector3(2.16, 1.85, 2.05)
+material = SubResource("Mat_cab_paint")
+
+[node name="CabNose" type="CSGBox3D" parent="VisualRoot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.78, -2.5)
+size = Vector3(2.1, 0.95, 0.55)
+material = SubResource("Mat_cab_paint")
+
+[node name="Windshield" type="CSGBox3D" parent="VisualRoot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.55, -2.29)
+size = Vector3(1.88, 0.68, 0.06)
+material = SubResource("Mat_cab_glass")
+
+[node name="BedFloorMesh" type="CSGBox3D" parent="VisualRoot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.38, 1.4)
+size = Vector3(2.2, 0.36, 3.2)
+material = SubResource("Mat_bed_metal")
+
+[node name="BedWallLeftMesh" type="CSGBox3D" parent="VisualRoot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.01, 1.15, 1.4)
+size = Vector3(0.18, 1.35, 3.2)
+material = SubResource("Mat_box_panel")
+
+[node name="BedWallRightMesh" type="CSGBox3D" parent="VisualRoot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.01, 1.15, 1.4)
+size = Vector3(0.18, 1.35, 3.2)
+material = SubResource("Mat_box_panel")
+
+[node name="RearRampMesh" type="CSGBox3D" parent="VisualRoot"]
+transform = Transform3D(1, 0, 0, 0, 0.965926, 0.258819, 0, -0.258819, 0.965926, 0, 0.34, 3.5)
+size = Vector3(1.9, 0.12, 1.25)
+material = SubResource("Mat_bed_metal")
+
+[node name="WheelFL" type="Node3D" parent="VisualRoot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.08, 0.4, -1.6)
+
+[node name="Mesh" type="MeshInstance3D" parent="VisualRoot/WheelFL"]
+transform = Transform3D(-4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, 0, 1, 0, 0, 0)
+mesh = SubResource("Mesh_wheel")
+
+[node name="WheelFR" type="Node3D" parent="VisualRoot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.08, 0.4, -1.6)
+
+[node name="Mesh" type="MeshInstance3D" parent="VisualRoot/WheelFR"]
+transform = Transform3D(-4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, 0, 1, 0, 0, 0)
+mesh = SubResource("Mesh_wheel")
+
+[node name="WheelRL" type="Node3D" parent="VisualRoot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.08, 0.4, 1.6)
+
+[node name="Mesh" type="MeshInstance3D" parent="VisualRoot/WheelRL"]
+transform = Transform3D(-4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, 0, 1, 0, 0, 0)
+mesh = SubResource("Mesh_wheel")
+
+[node name="WheelRR" type="Node3D" parent="VisualRoot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.08, 0.4, 1.6)
+
+[node name="Mesh" type="MeshInstance3D" parent="VisualRoot/WheelRR"]
+transform = Transform3D(-4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, 0, 1, 0, 0, 0)
+mesh = SubResource("Mesh_wheel")
+
+[node name="CargoBay" type="Area3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.56, 1.4)
+script = ExtResource("2_cargo_bay")
+bay_half_width = 0.75
+bay_half_length = 1.25
+bed_floor_y = 0.44
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="CargoBay"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.65, 0)
+shape = SubResource("Shape_cargo_bay_area")
+
+[node name="StrapVisuals" type="Node3D" parent="CargoBay"]
+visible = false
+
+[node name="StrapCrossA" type="CSGBox3D" parent="CargoBay/StrapVisuals"]
+transform = Transform3D(0.866025, 0, 0.5, 0, 1, 0, -0.5, 0, 0.866025, 0, 0.92, 0)
+size = Vector3(2.05, 0.06, 0.14)
+material = SubResource("Mat_strap_yellow")
+
+[node name="StrapCrossB" type="CSGBox3D" parent="CargoBay/StrapVisuals"]
+transform = Transform3D(0.866025, 0, -0.5, 0, 1, 0, 0.5, 0, 0.866025, 0, 0.94, 0)
+size = Vector3(2.05, 0.06, 0.14)
+material = SubResource("Mat_strap_yellow")
+
+[node name="Seats" type="Node3D" parent="."]
+
+[node name="DriverSeatMarker" type="Marker3D" parent="Seats"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.55, 0.6, -1.2)
+
+[node name="PassengerSeatMarker" type="Marker3D" parent="Seats"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.55, 0.6, -1.2)
+
+[node name="DriverExitMarker" type="Marker3D" parent="Seats"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.05, 0.15, -1.2)
+
+[node name="PassengerExitMarker" type="Marker3D" parent="Seats"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.05, 0.15, -1.2)
+
+[node name="Interactables" type="Node3D" parent="."]
+
+[node name="DriverDoorInteractable" type="Area3D" parent="Interactables"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.18, 1.15, -1.2)
+script = ExtResource("3_truck_inter")
+role = "DriverSeat"
+max_interaction_distance = 2.8
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Interactables/DriverDoorInteractable"]
+shape = SubResource("Shape_door_interact")
+
+[node name="DoorHandleVisualL" type="CSGBox3D" parent="Interactables/DriverDoorInteractable"]
+size = Vector3(0.08, 0.14, 0.34)
+material = SubResource("Mat_door_handle")
+
+[node name="PassengerDoorInteractable" type="Area3D" parent="Interactables"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.18, 1.15, -1.2)
+script = ExtResource("3_truck_inter")
+role = "PassengerSeat"
+max_interaction_distance = 2.8
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Interactables/PassengerDoorInteractable"]
+shape = SubResource("Shape_door_interact")
+
+[node name="DoorHandleVisualR" type="CSGBox3D" parent="Interactables/PassengerDoorInteractable"]
+size = Vector3(0.08, 0.14, 0.34)
+material = SubResource("Mat_door_handle")
+
+[node name="CargoStrapAnchor" type="Area3D" parent="Interactables"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.14, 1.05, 2.65)
+script = ExtResource("3_truck_inter")
+role = "CargoAnchor"
+max_interaction_distance = 3.2
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Interactables/CargoStrapAnchor"]
+shape = SubResource("Shape_anchor_interact")
+
+[node name="AnchorRatchetMesh" type="MeshInstance3D" parent="Interactables/CargoStrapAnchor"]
+mesh = SubResource("Mesh_anchor_box")
