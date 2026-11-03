@@ -1,0 +1,86 @@
+[gd_scene load_steps=13 format=3]
+
+[ext_resource type="Script" path="res://cargo/cargo_body.gd" id="1_cargo_body"]
+[ext_resource type="Script" path="res://cargo/cargo_data.gd" id="2_cargo_data"]
+[ext_resource type="Script" path="res://cargo/cargo_damage.gd" id="3_cargo_dmg"]
+[ext_resource type="Script" path="res://cargo/carry_controller.gd" id="4_carry_ctrl"]
+[ext_resource type="Script" path="res://cargo/cargo_handle.gd" id="5_cargo_handle"]
+
+[sub_resource type="Resource" id="Resource_crate_data"]
+script = ExtResource("2_cargo_data")
+cargo_type_id = "crate"
+display_name = "Delivery Crate"
+mass_kg = 10.0
+max_durability = 100.0
+required_carriers = 1
+fragility_multiplier = 1.0
+impact_speed_threshold = 2.6
+damage_cooldown_sec = 0.35
+max_detach_distance = 3.2
+hold_distance = 1.35
+hold_height_offset = 0.95
+
+[sub_resource type="PhysicsMaterial" id="PhysicsMaterial_crate"]
+friction = 0.75
+bounce = 0.08
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_crate"]
+size = Vector3(0.85, 0.85, 0.85)
+
+[sub_resource type="StandardMaterial3D" id="Mat_crate_wood"]
+albedo_color = Color(0.76, 0.54, 0.28, 1)
+roughness = 0.82
+
+[sub_resource type="BoxMesh" id="Mesh_crate_main"]
+material = SubResource("Mat_crate_wood")
+size = Vector3(0.85, 0.85, 0.85)
+
+[sub_resource type="StandardMaterial3D" id="Mat_crate_strap"]
+albedo_color = Color(0.28, 0.22, 0.16, 1)
+roughness = 0.7
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_handle"]
+radius = 0.75
+
+[node name="CargoCrate" type="RigidBody3D"]
+collision_layer = 8
+collision_mask = 27
+mass = 10.0
+physics_material_override = SubResource("PhysicsMaterial_crate")
+contact_monitor = true
+max_contacts_reported = 4
+script = ExtResource("1_cargo_body")
+cargo_data = SubResource("Resource_crate_data")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("BoxShape3D_crate")
+
+[node name="VisualRoot" type="Node3D" parent="."]
+
+[node name="CrateMesh" type="MeshInstance3D" parent="VisualRoot"]
+mesh = SubResource("Mesh_crate_main")
+
+[node name="TrimBandX" type="CSGBox3D" parent="VisualRoot"]
+size = Vector3(0.88, 0.12, 0.88)
+material = SubResource("Mat_crate_strap")
+
+[node name="TrimBandZ" type="CSGBox3D" parent="VisualRoot"]
+size = Vector3(0.12, 0.88, 0.88)
+material = SubResource("Mat_crate_strap")
+
+[node name="CargoDamage" type="Node" parent="."]
+script = ExtResource("3_cargo_dmg")
+
+[node name="CarryController" type="Node" parent="."]
+script = ExtResource("4_carry_ctrl")
+
+[node name="Handles" type="Node3D" parent="."]
+
+[node name="CenterHandle" type="Area3D" parent="Handles"]
+script = ExtResource("5_cargo_handle")
+handle_id = 0
+handle_label = "Side Grips"
+max_interaction_distance = 2.8
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Handles/CenterHandle"]
+shape = SubResource("SphereShape3D_handle")

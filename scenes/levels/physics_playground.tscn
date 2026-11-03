@@ -1,0 +1,209 @@
+[gd_scene load_steps=18 format=3]
+
+[ext_resource type="Script" path="res://scenes/levels/sofa_delivery_level.gd" id="1_level_script"]
+[ext_resource type="PackedScene" path="res://player/player.tscn" id="2_player_scene"]
+[ext_resource type="PackedScene" path="res://ui/game_hud.tscn" id="3_hud_scene"]
+[ext_resource type="PackedScene" path="res://cargo/cargo.tscn" id="4_crate_scene"]
+[ext_resource type="PackedScene" path="res://cargo/sofa_cargo.tscn" id="5_sofa_scene"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_pg"]
+sky_top_color = Color(0.26, 0.56, 0.92, 1)
+sky_horizon_color = Color(0.74, 0.86, 0.96, 1)
+ground_bottom_color = Color(0.24, 0.28, 0.32, 1)
+ground_horizon_color = Color(0.58, 0.64, 0.68, 1)
+
+[sub_resource type="Sky" id="Sky_pg"]
+sky_material = SubResource("ProceduralSkyMaterial_pg")
+
+[sub_resource type="Environment" id="Environment_pg"]
+background_mode = 2
+sky = SubResource("Sky_pg")
+ambient_light_source = 3
+ambient_light_color = Color(0.86, 0.88, 0.92, 1)
+ambient_light_energy = 0.6
+tonemap_mode = 2
+
+[sub_resource type="StandardMaterial3D" id="Mat_pg_floor"]
+albedo_color = Color(0.46, 0.5, 0.54, 1)
+roughness = 0.88
+
+[sub_resource type="StandardMaterial3D" id="Mat_pg_wall"]
+albedo_color = Color(0.82, 0.84, 0.88, 1)
+roughness = 0.78
+
+[sub_resource type="StandardMaterial3D" id="Mat_pg_ramp"]
+albedo_color = Color(0.92, 0.62, 0.2, 1)
+roughness = 0.75
+
+[sub_resource type="StandardMaterial3D" id="Mat_pg_impact_wall"]
+albedo_color = Color(0.88, 0.26, 0.24, 1)
+roughness = 0.65
+
+[sub_resource type="StandardMaterial3D" id="Mat_pg_cargo_bay"]
+albedo_color = Color(0.2, 0.72, 0.52, 1)
+roughness = 0.7
+
+[sub_resource type="BoxShape3D" id="Shape_pg_floor"]
+size = Vector3(44, 1, 44)
+
+[sub_resource type="BoxMesh" id="Mesh_pg_floor"]
+material = SubResource("Mat_pg_floor")
+size = Vector3(44, 1, 44)
+
+[sub_resource type="BoxShape3D" id="Shape_pg_impact"]
+size = Vector3(6, 4.5, 0.6)
+
+[sub_resource type="BoxMesh" id="Mesh_pg_impact"]
+material = SubResource("Mat_pg_impact_wall")
+size = Vector3(6, 4.5, 0.6)
+
+[node name="PhysicsPlayground" type="Node3D"]
+script = ExtResource("1_level_script")
+alternate_scene_path = "res://scenes/levels/sofa_delivery.tscn"
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_pg")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.819152, -0.40558, 0.40558, 0, 0.707107, 0.707107, -0.573576, -0.579228, 0.579228, 0, 16, 0)
+shadow_enabled = true
+
+[node name="SpawnPoint" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, 4.5)
+
+[node name="Player" parent="." instance=ExtResource("2_player_scene")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, 4.5)
+
+[node name="GameHUD" parent="." instance=ExtResource("3_hud_scene")]
+
+[node name="PlaygroundGeometry" type="Node3D" parent="."]
+
+[node name="FloorBody" type="StaticBody3D" parent="PlaygroundGeometry"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+collision_layer = 1
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="PlaygroundGeometry/FloorBody"]
+shape = SubResource("Shape_pg_floor")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="PlaygroundGeometry/FloorBody"]
+mesh = SubResource("Mesh_pg_floor")
+
+[node name="RampAndCurb" type="Node3D" parent="PlaygroundGeometry"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, 0)
+
+[node name="TestCurb" type="CSGBox3D" parent="PlaygroundGeometry/RampAndCurb"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, 3.5)
+use_collision = true
+collision_layer = 1
+collision_mask = 0
+size = Vector3(5, 0.2, 1.2)
+material = SubResource("Mat_pg_ramp")
+
+[node name="TestRamp" type="CSGBox3D" parent="PlaygroundGeometry/RampAndCurb"]
+transform = Transform3D(1, 0, 0, 0, 0.965926, -0.258819, 0, 0.258819, 0.965926, 0, 0.65, -1.5)
+use_collision = true
+collision_layer = 1
+collision_mask = 0
+size = Vector3(4, 0.25, 5.5)
+material = SubResource("Mat_pg_ramp")
+
+[node name="RampPlatform" type="CSGBox3D" parent="PlaygroundGeometry/RampAndCurb"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.7, -5.6)
+use_collision = true
+collision_layer = 1
+collision_mask = 0
+size = Vector3(4, 1.4, 3.2)
+material = SubResource("Mat_pg_wall")
+
+[node name="DoorwayAndCorridor" type="Node3D" parent="PlaygroundGeometry"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -6)
+
+[node name="DoorWallLeft" type="CSGBox3D" parent="PlaygroundGeometry/DoorwayAndCorridor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.5, 1.6, 0)
+use_collision = true
+collision_layer = 1
+collision_mask = 0
+size = Vector3(3.2, 3.2, 0.35)
+material = SubResource("Mat_pg_wall")
+
+[node name="DoorWallRight" type="CSGBox3D" parent="PlaygroundGeometry/DoorwayAndCorridor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.5, 1.6, 0)
+use_collision = true
+collision_layer = 1
+collision_mask = 0
+size = Vector3(3.2, 3.2, 0.35)
+material = SubResource("Mat_pg_wall")
+
+[node name="CorridorWallWest" type="CSGBox3D" parent="PlaygroundGeometry/DoorwayAndCorridor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.35, 1.6, -3.5)
+use_collision = true
+collision_layer = 1
+collision_mask = 0
+size = Vector3(0.35, 3.2, 6.8)
+material = SubResource("Mat_pg_wall")
+
+[node name="CorridorWallEast" type="CSGBox3D" parent="PlaygroundGeometry/DoorwayAndCorridor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.35, 1.6, -3.5)
+use_collision = true
+collision_layer = 1
+collision_mask = 0
+size = Vector3(0.35, 3.2, 6.8)
+material = SubResource("Mat_pg_wall")
+
+[node name="CargoBayTestArea" type="Node3D" parent="PlaygroundGeometry"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.5, 0, 0)
+
+[node name="BayFloorPad" type="CSGBox3D" parent="PlaygroundGeometry/CargoBayTestArea"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.04, 0)
+use_collision = true
+collision_layer = 1
+collision_mask = 0
+size = Vector3(3.6, 0.08, 5.2)
+material = SubResource("Mat_pg_cargo_bay")
+
+[node name="BaySideWallLeft" type="CSGBox3D" parent="PlaygroundGeometry/CargoBayTestArea"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.8, 0.75, 0)
+use_collision = true
+collision_layer = 1
+collision_mask = 0
+size = Vector3(0.2, 1.5, 5.2)
+material = SubResource("Mat_pg_wall")
+
+[node name="BaySideWallRight" type="CSGBox3D" parent="PlaygroundGeometry/CargoBayTestArea"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.8, 0.75, 0)
+use_collision = true
+collision_layer = 1
+collision_mask = 0
+size = Vector3(0.2, 1.5, 5.2)
+material = SubResource("Mat_pg_wall")
+
+[node name="BayFrontStop" type="CSGBox3D" parent="PlaygroundGeometry/CargoBayTestArea"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.75, -2.5)
+use_collision = true
+collision_layer = 1
+collision_mask = 0
+size = Vector3(3.6, 1.5, 0.2)
+material = SubResource("Mat_pg_wall")
+
+[node name="ImpactTestWall" type="StaticBody3D" parent="PlaygroundGeometry"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.5, 2.25, -8.5)
+collision_layer = 1
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="PlaygroundGeometry/ImpactTestWall"]
+shape = SubResource("Shape_pg_impact")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="PlaygroundGeometry/ImpactTestWall"]
+mesh = SubResource("Mesh_pg_impact")
+
+[node name="CargoItems" type="Node3D" parent="."]
+
+[node name="StandardCrate" parent="CargoItems" instance=ExtResource("4_crate_scene")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.8, 0.55, 1.2)
+
+[node name="RampDropCrate" parent="CargoItems" instance=ExtResource("4_crate_scene")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.0, 1.9, -5.6)
+
+[node name="PlaygroundSofa" parent="CargoItems" instance=ExtResource("5_sofa_scene")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.5, 0.25, 1.2)

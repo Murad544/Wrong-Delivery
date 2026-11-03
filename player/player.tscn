@@ -1,0 +1,82 @@
+[gd_scene load_steps=11 format=3]
+
+[ext_resource type="Script" path="res://player/player_controller.gd" id="1_player_ctrl"]
+[ext_resource type="Script" path="res://player/player_camera.gd" id="2_player_cam"]
+[ext_resource type="Script" path="res://player/interaction_controller.gd" id="3_inter_ctrl"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_body"]
+radius = 0.38
+height = 1.8
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_suit"]
+albedo_color = Color(0.95, 0.48, 0.16, 1)
+roughness = 0.7
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_body"]
+material = SubResource("StandardMaterial3D_suit")
+radius = 0.38
+height = 1.8
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_accent"]
+albedo_color = Color(0.18, 0.27, 0.42, 1)
+roughness = 0.6
+
+[sub_resource type="BoxMesh" id="BoxMesh_visor"]
+material = SubResource("StandardMaterial3D_accent")
+size = Vector3(0.46, 0.16, 0.32)
+
+[sub_resource type="BoxMesh" id="BoxMesh_pack"]
+material = SubResource("StandardMaterial3D_accent")
+size = Vector3(0.48, 0.56, 0.24)
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_interact"]
+radius = 3.2
+
+[node name="Player" type="CharacterBody3D"]
+collision_layer = 2
+collision_mask = 9
+floor_max_angle = 0.872665
+script = ExtResource("1_player_ctrl")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+shape = SubResource("CapsuleShape3D_body")
+
+[node name="VisualRoot" type="Node3D" parent="."]
+
+[node name="BodyMesh" type="MeshInstance3D" parent="VisualRoot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+mesh = SubResource("CapsuleMesh_body")
+
+[node name="VisorMesh" type="MeshInstance3D" parent="VisualRoot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.48, -0.28)
+mesh = SubResource("BoxMesh_visor")
+
+[node name="BackpackMesh" type="MeshInstance3D" parent="VisualRoot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.02, 0.3)
+mesh = SubResource("BoxMesh_pack")
+
+[node name="PlayerCamera" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
+script = ExtResource("2_player_cam")
+
+[node name="SpringArm3D" type="SpringArm3D" parent="PlayerCamera"]
+transform = Transform3D(1, 0, 0, 0, 0.951057, 0.309017, 0, -0.309017, 0.951057, 0, 0, 0)
+collision_mask = 1
+spring_length = 4.2
+margin = 0.2
+
+[node name="Camera3D" type="Camera3D" parent="PlayerCamera/SpringArm3D"]
+current = true
+fov = 70.0
+
+[node name="InteractionController" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.25, 0)
+script = ExtResource("3_inter_ctrl")
+
+[node name="ProximityDetector" type="Area3D" parent="InteractionController"]
+collision_layer = 0
+collision_mask = 4
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="InteractionController/ProximityDetector"]
+shape = SubResource("SphereShape3D_interact")

@@ -1,0 +1,367 @@
+[gd_scene load_steps=28 format=3]
+
+[ext_resource type="Script" path="res://scenes/levels/sofa_delivery_level.gd" id="1_level_script"]
+[ext_resource type="PackedScene" path="res://player/player.tscn" id="2_player_scene"]
+[ext_resource type="PackedScene" path="res://ui/game_hud.tscn" id="3_hud_scene"]
+[ext_resource type="Script" path="res://player/interactable_target.gd" id="4_interactable_script"]
+[ext_resource type="PackedScene" path="res://cargo/cargo.tscn" id="5_crate_scene"]
+[ext_resource type="PackedScene" path="res://cargo/sofa_cargo.tscn" id="6_sofa_scene"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_sky"]
+sky_top_color = Color(0.32, 0.62, 0.96, 1)
+sky_horizon_color = Color(0.76, 0.88, 0.98, 1)
+ground_bottom_color = Color(0.28, 0.34, 0.26, 1)
+ground_horizon_color = Color(0.68, 0.76, 0.68, 1)
+
+[sub_resource type="Sky" id="Sky_main"]
+sky_material = SubResource("ProceduralSkyMaterial_sky")
+
+[sub_resource type="Environment" id="Environment_main"]
+background_mode = 2
+sky = SubResource("Sky_main")
+ambient_light_source = 3
+ambient_light_color = Color(0.85, 0.88, 0.92, 1)
+ambient_light_energy = 0.55
+tonemap_mode = 2
+
+[sub_resource type="StandardMaterial3D" id="Mat_grass"]
+albedo_color = Color(0.42, 0.68, 0.36, 1)
+roughness = 0.95
+
+[sub_resource type="StandardMaterial3D" id="Mat_warehouse_floor"]
+albedo_color = Color(0.55, 0.57, 0.6, 1)
+roughness = 0.85
+
+[sub_resource type="StandardMaterial3D" id="Mat_warehouse_wall"]
+albedo_color = Color(0.78, 0.45, 0.28, 1)
+roughness = 0.8
+
+[sub_resource type="StandardMaterial3D" id="Mat_road"]
+albedo_color = Color(0.24, 0.26, 0.29, 1)
+roughness = 0.9
+
+[sub_resource type="StandardMaterial3D" id="Mat_bump"]
+albedo_color = Color(0.95, 0.76, 0.18, 1)
+roughness = 0.7
+
+[sub_resource type="StandardMaterial3D" id="Mat_house_wall"]
+albedo_color = Color(0.94, 0.89, 0.76, 1)
+roughness = 0.8
+
+[sub_resource type="StandardMaterial3D" id="Mat_house_floor"]
+albedo_color = Color(0.68, 0.5, 0.34, 1)
+roughness = 0.75
+
+[sub_resource type="StandardMaterial3D" id="Mat_delivery_zone"]
+albedo_color = Color(0.2, 0.82, 0.48, 1)
+roughness = 0.6
+
+[sub_resource type="StandardMaterial3D" id="Mat_interact_prop"]
+albedo_color = Color(0.22, 0.68, 0.95, 1)
+roughness = 0.4
+
+[sub_resource type="BoxShape3D" id="Shape_ground"]
+size = Vector3(80, 1, 80)
+
+[sub_resource type="BoxMesh" id="Mesh_ground"]
+material = SubResource("Mat_grass")
+size = Vector3(80, 1, 80)
+
+[sub_resource type="BoxShape3D" id="Shape_wall_long"]
+size = Vector3(14, 4, 0.4)
+
+[sub_resource type="BoxMesh" id="Mesh_wall_long"]
+material = SubResource("Mat_warehouse_wall")
+size = Vector3(14, 4, 0.4)
+
+[sub_resource type="BoxShape3D" id="Shape_wall_side"]
+size = Vector3(0.4, 4, 12)
+
+[sub_resource type="BoxMesh" id="Mesh_wall_side"]
+material = SubResource("Mat_warehouse_wall")
+size = Vector3(0.4, 4, 12)
+
+[sub_resource type="BoxShape3D" id="Shape_partition_segment"]
+size = Vector3(5.6, 4, 0.4)
+
+[sub_resource type="BoxMesh" id="Mesh_partition_segment"]
+material = SubResource("Mat_warehouse_wall")
+size = Vector3(5.6, 4, 0.4)
+
+[sub_resource type="SphereShape3D" id="Shape_interact_sphere"]
+radius = 0.65
+
+[node name="SofaDeliveryLevel" type="Node3D"]
+script = ExtResource("1_level_script")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_main")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.819152, -0.40558, 0.40558, 0, 0.707107, 0.707107, -0.573576, -0.579228, 0.579228, 0, 18, 0)
+shadow_enabled = true
+
+[node name="SpawnPoint" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.5, 0.1, -2.5)
+
+[node name="Player" parent="." instance=ExtResource("2_player_scene")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.5, 0.1, -2.5)
+
+[node name="GameHUD" parent="." instance=ExtResource("3_hud_scene")]
+
+[node name="BlockoutGeometry" type="Node3D" parent="."]
+
+[node name="GroundBody" type="StaticBody3D" parent="BlockoutGeometry"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, -0.5, 16)
+collision_layer = 1
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="BlockoutGeometry/GroundBody"]
+shape = SubResource("Shape_ground")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="BlockoutGeometry/GroundBody"]
+mesh = SubResource("Mesh_ground")
+
+[node name="Warehouse" type="Node3D" parent="BlockoutGeometry"]
+
+[node name="FloorVisual" type="CSGBox3D" parent="BlockoutGeometry/Warehouse"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 0)
+use_collision = true
+collision_layer = 1
+collision_mask = 0
+size = Vector3(14, 0.05, 12)
+material = SubResource("Mat_warehouse_floor")
+
+[node name="NorthWall" type="StaticBody3D" parent="BlockoutGeometry/Warehouse"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, -6)
+collision_layer = 1
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="BlockoutGeometry/Warehouse/NorthWall"]
+shape = SubResource("Shape_wall_long")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="BlockoutGeometry/Warehouse/NorthWall"]
+mesh = SubResource("Mesh_wall_long")
+
+[node name="WestWall" type="StaticBody3D" parent="BlockoutGeometry/Warehouse"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 2, 0)
+collision_layer = 1
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="BlockoutGeometry/Warehouse/WestWall"]
+shape = SubResource("Shape_wall_side")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="BlockoutGeometry/Warehouse/WestWall"]
+mesh = SubResource("Mesh_wall_side")
+
+[node name="EastWall" type="StaticBody3D" parent="BlockoutGeometry/Warehouse"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 2, 0)
+collision_layer = 1
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="BlockoutGeometry/Warehouse/EastWall"]
+shape = SubResource("Shape_wall_side")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="BlockoutGeometry/Warehouse/EastWall"]
+mesh = SubResource("Mesh_wall_side")
+
+[node name="InteriorPartitionLeft" type="StaticBody3D" parent="BlockoutGeometry/Warehouse"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.1, 2, 0.5)
+collision_layer = 1
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="BlockoutGeometry/Warehouse/InteriorPartitionLeft"]
+shape = SubResource("Shape_partition_segment")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="BlockoutGeometry/Warehouse/InteriorPartitionLeft"]
+mesh = SubResource("Mesh_partition_segment")
+
+[node name="InteriorPartitionRight" type="StaticBody3D" parent="BlockoutGeometry/Warehouse"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.1, 2, 0.5)
+collision_layer = 1
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="BlockoutGeometry/Warehouse/InteriorPartitionRight"]
+shape = SubResource("Shape_partition_segment")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="BlockoutGeometry/Warehouse/InteriorPartitionRight"]
+mesh = SubResource("Mesh_partition_segment")
+
+[node name="SouthWallLeft" type="CSGBox3D" parent="BlockoutGeometry/Warehouse"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.75, 2, 6)
+use_collision = true
+collision_layer = 1
+collision_mask = 0
+size = Vector3(4.5, 4, 0.4)
+material = SubResource("Mat_warehouse_wall")
+
+[node name="SouthWallRight" type="CSGBox3D" parent="BlockoutGeometry/Warehouse"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.75, 2, 6)
+use_collision = true
+collision_layer = 1
+collision_mask = 0
+size = Vector3(4.5, 4, 0.4)
+material = SubResource("Mat_warehouse_wall")
+
+[node name="RoadAndParking" type="Node3D" parent="BlockoutGeometry"]
+
+[node name="LoadingBayApron" type="CSGBox3D" parent="BlockoutGeometry/RoadAndParking"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 10)
+use_collision = true
+collision_layer = 1
+collision_mask = 0
+size = Vector3(10, 0.04, 8)
+material = SubResource("Mat_road")
+
+[node name="MainStreetNorthSouth" type="CSGBox3D" parent="BlockoutGeometry/RoadAndParking"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 23)
+use_collision = true
+collision_layer = 1
+collision_mask = 0
+size = Vector3(7, 0.04, 18)
+material = SubResource("Mat_road")
+
+[node name="SpeedBump" type="CSGBox3D" parent="BlockoutGeometry/RoadAndParking"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.09, 21)
+use_collision = true
+collision_layer = 1
+collision_mask = 0
+size = Vector3(6.6, 0.14, 0.9)
+material = SubResource("Mat_bump")
+
+[node name="SideStreetEast" type="CSGBox3D" parent="BlockoutGeometry/RoadAndParking"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.5, 0.02, 29)
+use_collision = true
+collision_layer = 1
+collision_mask = 0
+size = Vector3(12, 0.04, 6)
+material = SubResource("Mat_road")
+
+[node name="CustomerHouse" type="Node3D" parent="BlockoutGeometry"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 0, 29)
+
+[node name="HouseFloor" type="CSGBox3D" parent="BlockoutGeometry/CustomerHouse"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.03, 0)
+use_collision = true
+collision_layer = 1
+collision_mask = 0
+size = Vector3(10, 0.06, 10)
+material = SubResource("Mat_house_floor")
+
+[node name="DeliveryZonePad" type="CSGBox3D" parent="BlockoutGeometry/CustomerHouse"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.2, 0.07, 2.2)
+use_collision = false
+size = Vector3(3.6, 0.02, 3.0)
+material = SubResource("Mat_delivery_zone")
+
+[node name="HouseNorthWall" type="CSGBox3D" parent="BlockoutGeometry/CustomerHouse"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.8, -5)
+use_collision = true
+collision_layer = 1
+collision_mask = 0
+size = Vector3(10, 3.6, 0.35)
+material = SubResource("Mat_house_wall")
+
+[node name="HouseSouthWall" type="CSGBox3D" parent="BlockoutGeometry/CustomerHouse"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.8, 5)
+use_collision = true
+collision_layer = 1
+collision_mask = 0
+size = Vector3(10, 3.6, 0.35)
+material = SubResource("Mat_house_wall")
+
+[node name="HouseEastWall" type="CSGBox3D" parent="BlockoutGeometry/CustomerHouse"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 1.8, 0)
+use_collision = true
+collision_layer = 1
+collision_mask = 0
+size = Vector3(0.35, 3.6, 10)
+material = SubResource("Mat_house_wall")
+
+[node name="HouseWestWallNorth" type="CSGBox3D" parent="BlockoutGeometry/CustomerHouse"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 1.8, -3.0)
+use_collision = true
+collision_layer = 1
+collision_mask = 0
+size = Vector3(0.35, 3.6, 4.0)
+material = SubResource("Mat_house_wall")
+
+[node name="HouseWestWallSouth" type="CSGBox3D" parent="BlockoutGeometry/CustomerHouse"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 1.8, 3.0)
+use_collision = true
+collision_layer = 1
+collision_mask = 0
+size = Vector3(0.35, 3.6, 4.0)
+material = SubResource("Mat_house_wall")
+
+[node name="HouseInteriorCornerWall" type="CSGBox3D" parent="BlockoutGeometry/CustomerHouse"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.2, 1.8, -1.8)
+use_collision = true
+collision_layer = 1
+collision_mask = 0
+size = Vector3(0.35, 3.6, 4.2)
+material = SubResource("Mat_house_wall")
+
+[node name="Interactables" type="Node3D" parent="."]
+
+[node name="ManifestClipboard" type="Area3D" parent="Interactables"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.6, 1.25, 0.15)
+script = ExtResource("4_interactable_script")
+prompt_description = "Inspect delivery manifest"
+feedback_message = "Manifest: 1x Oversized Sofa -> 20 Maple St"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Interactables/ManifestClipboard"]
+shape = SubResource("Shape_interact_sphere")
+
+[node name="VisualStand" type="CSGBox3D" parent="Interactables/ManifestClipboard"]
+size = Vector3(0.45, 0.55, 0.12)
+material = SubResource("Mat_interact_prop")
+
+[node name="LoadingBaySwitch" type="Area3D" parent="Interactables"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.2, 1.25, 5.65)
+script = ExtResource("4_interactable_script")
+prompt_description = "Check loading bay clearance"
+feedback_message = "Loading bay clear and ready"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Interactables/LoadingBaySwitch"]
+shape = SubResource("Shape_interact_sphere")
+
+[node name="VisualBox" type="CSGBox3D" parent="Interactables/LoadingBaySwitch"]
+size = Vector3(0.35, 0.45, 0.2)
+material = SubResource("Mat_interact_prop")
+
+[node name="HouseDoorbell" type="Area3D" parent="Interactables"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14.7, 1.3, 27.6)
+script = ExtResource("4_interactable_script")
+prompt_description = "Ring customer doorbell"
+feedback_message = "Ding-dong! Customer: 'Bring the sofa inside!'"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Interactables/HouseDoorbell"]
+shape = SubResource("Shape_interact_sphere")
+
+[node name="VisualButton" type="CSGBox3D" parent="Interactables/HouseDoorbell"]
+size = Vector3(0.2, 0.35, 0.35)
+material = SubResource("Mat_interact_prop")
+
+[node name="DeliveryTerminal" type="Area3D" parent="Interactables"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22.2, 1.1, 31.2)
+script = ExtResource("4_interactable_script")
+prompt_description = "Confirm sofa delivery"
+interaction_enabled = false
+disabled_reason = "No sofa in delivery zone"
+feedback_message = "Delivery confirmed"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Interactables/DeliveryTerminal"]
+shape = SubResource("Shape_interact_sphere")
+
+[node name="VisualPedestal" type="CSGBox3D" parent="Interactables/DeliveryTerminal"]
+size = Vector3(0.4, 0.9, 0.4)
+material = SubResource("Mat_bump")
+
+[node name="CargoItems" type="Node3D" parent="."]
+
+[node name="WarehouseCrate" parent="CargoItems" instance=ExtResource("5_crate_scene")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.55, -2.2)
+
+[node name="WarehouseSofa" parent="CargoItems" instance=ExtResource("6_sofa_scene")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.2, 0.25, -3.2)

@@ -1,0 +1,4 @@
+res://player/interaction_controller.gd
+res://player/player_controller.gd
+res://scenes/levels/sofa_delivery_level.gd
+res://ui/game_hud.gd

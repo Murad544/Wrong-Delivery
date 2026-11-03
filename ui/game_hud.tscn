@@ -1,0 +1,97 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://ui/game_hud.gd" id="1_hud"]
+
+[node name="GameHUD" type="CanvasLayer"]
+script = ExtResource("1_hud")
+
+[node name="CenterReticle" type="CenterContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="ReticleDot" type="ColorRect" parent="CenterReticle"]
+custom_minimum_size = Vector2(6, 6)
+layout_mode = 2
+mouse_filter = 2
+color = Color(1, 1, 1, 0.85)
+
+[node name="RootMargin" type="MarginContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 36
+
+[node name="TopLeftPanel" type="PanelContainer" parent="RootMargin"]
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 0
+mouse_filter = 2
+
+[node name="VBox" type="VBoxContainer" parent="RootMargin/TopLeftPanel"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="TitleLabel" type="Label" parent="RootMargin/TopLeftPanel/VBox"]
+layout_mode = 2
+text = "Wrong Delivery — Milestone 02 Cargo Physics"
+
+[node name="ControlsLabel" type="Label" parent="RootMargin/TopLeftPanel/VBox"]
+layout_mode = 2
+text = "WASD: Move | Shift: Sprint | Space: Jump | E: Grab/Drop | Q/R: Rotate"
+
+[node name="StatusLabel" type="Label" parent="RootMargin/TopLeftPanel/VBox"]
+layout_mode = 2
+text = "Mouse: Captured (Esc) | F3: Diagnostics | F4: Reset Cargo | F5: Switch Scene"
+
+[node name="TopRightDebugPanel" type="PanelContainer" parent="RootMargin"]
+layout_mode = 2
+size_flags_horizontal = 8
+size_flags_vertical = 0
+mouse_filter = 2
+
+[node name="DebugVBox" type="VBoxContainer" parent="RootMargin/TopRightDebugPanel"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="DebugHeaderLabel" type="Label" parent="RootMargin/TopRightDebugPanel/DebugVBox"]
+layout_mode = 2
+text = "Cargo Physics Diagnostics (F3)"
+
+[node name="DebugStatsLabel" type="Label" parent="RootMargin/TopRightDebugPanel/DebugVBox"]
+layout_mode = 2
+text = "No cargo tracked"
+
+[node name="CenterBottom" type="VBoxContainer" parent="RootMargin"]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 8
+mouse_filter = 2
+theme_override_constants/separation = 8
+alignment = 1
+
+[node name="FeedbackLabel" type="Label" parent="RootMargin/CenterBottom"]
+visible = false
+layout_mode = 2
+horizontal_alignment = 1
+text = "Feedback"
+
+[node name="PromptPanel" type="PanelContainer" parent="RootMargin/CenterBottom"]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 4
+mouse_filter = 2
+
+[node name="PromptLabel" type="Label" parent="RootMargin/CenterBottom/PromptPanel"]
+layout_mode = 2
+horizontal_alignment = 1
+text = "E — Interact"

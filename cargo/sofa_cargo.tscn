@@ -1,0 +1,128 @@
+[gd_scene load_steps=16 format=3]
+
+[ext_resource type="Script" path="res://cargo/cargo_body.gd" id="1_cargo_body"]
+[ext_resource type="Script" path="res://cargo/cargo_data.gd" id="2_cargo_data"]
+[ext_resource type="Script" path="res://cargo/cargo_damage.gd" id="3_cargo_dmg"]
+[ext_resource type="Script" path="res://cargo/carry_controller.gd" id="4_carry_ctrl"]
+[ext_resource type="Script" path="res://cargo/cargo_handle.gd" id="5_cargo_handle"]
+
+[sub_resource type="Resource" id="Resource_sofa_data"]
+script = ExtResource("2_cargo_data")
+cargo_type_id = "giant_sofa"
+display_name = "The Impossible Sofa"
+mass_kg = 30.0
+max_durability = 100.0
+required_carriers = 2
+fragility_multiplier = 0.8
+impact_speed_threshold = 2.8
+damage_cooldown_sec = 0.4
+max_detach_distance = 3.5
+hold_distance = 1.45
+hold_height_offset = 0.85
+
+[sub_resource type="PhysicsMaterial" id="PhysicsMaterial_sofa"]
+friction = 0.85
+bounce = 0.04
+
+[sub_resource type="BoxShape3D" id="Shape_sofa_seat"]
+size = Vector3(2.2, 0.48, 0.95)
+
+[sub_resource type="BoxShape3D" id="Shape_sofa_back"]
+size = Vector3(2.2, 0.55, 0.25)
+
+[sub_resource type="StandardMaterial3D" id="Mat_sofa_fabric"]
+albedo_color = Color(0.84, 0.26, 0.32, 1)
+roughness = 0.85
+
+[sub_resource type="StandardMaterial3D" id="Mat_sofa_cushion"]
+albedo_color = Color(0.92, 0.36, 0.4, 1)
+roughness = 0.8
+
+[sub_resource type="StandardMaterial3D" id="Mat_handle_marker"]
+albedo_color = Color(0.98, 0.84, 0.2, 1)
+roughness = 0.35
+
+[sub_resource type="BoxMesh" id="Mesh_sofa_seat"]
+material = SubResource("Mat_sofa_fabric")
+size = Vector3(2.2, 0.45, 0.92)
+
+[sub_resource type="BoxMesh" id="Mesh_sofa_back"]
+material = SubResource("Mat_sofa_cushion")
+size = Vector3(2.2, 0.55, 0.24)
+
+[sub_resource type="SphereShape3D" id="Shape_sofa_handle"]
+radius = 0.65
+
+[node name="SofaCargo" type="RigidBody3D"]
+collision_layer = 8
+collision_mask = 27
+mass = 30.0
+physics_material_override = SubResource("PhysicsMaterial_sofa")
+contact_monitor = true
+max_contacts_reported = 4
+script = ExtResource("1_cargo_body")
+cargo_data = SubResource("Resource_sofa_data")
+
+[node name="SeatCollision" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.24, 0)
+shape = SubResource("Shape_sofa_seat")
+
+[node name="BackCollision" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.68, -0.34)
+shape = SubResource("Shape_sofa_back")
+
+[node name="VisualRoot" type="Node3D" parent="."]
+
+[node name="SeatMesh" type="MeshInstance3D" parent="VisualRoot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.24, 0)
+mesh = SubResource("Mesh_sofa_seat")
+
+[node name="BackMesh" type="MeshInstance3D" parent="VisualRoot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.68, -0.34)
+mesh = SubResource("Mesh_sofa_back")
+
+[node name="LeftArmMesh" type="CSGBox3D" parent="VisualRoot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.0, 0.52, 0)
+size = Vector3(0.24, 0.36, 0.94)
+material = SubResource("Mat_sofa_cushion")
+
+[node name="RightArmMesh" type="CSGBox3D" parent="VisualRoot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.0, 0.52, 0)
+size = Vector3(0.24, 0.36, 0.94)
+material = SubResource("Mat_sofa_cushion")
+
+[node name="CargoDamage" type="Node" parent="."]
+script = ExtResource("3_cargo_dmg")
+
+[node name="CarryController" type="Node" parent="."]
+script = ExtResource("4_carry_ctrl")
+
+[node name="Handles" type="Node3D" parent="."]
+
+[node name="LeftHandle" type="Area3D" parent="Handles"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.15, 0.45, 0)
+script = ExtResource("5_cargo_handle")
+handle_id = 0
+handle_label = "Left Handle"
+max_interaction_distance = 2.8
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Handles/LeftHandle"]
+shape = SubResource("Shape_sofa_handle")
+
+[node name="HandleMarkerLeft" type="CSGBox3D" parent="Handles/LeftHandle"]
+size = Vector3(0.14, 0.14, 0.5)
+material = SubResource("Mat_handle_marker")
+
+[node name="RightHandle" type="Area3D" parent="Handles"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.15, 0.45, 0)
+script = ExtResource("5_cargo_handle")
+handle_id = 1
+handle_label = "Right Handle"
+max_interaction_distance = 2.8
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Handles/RightHandle"]
+shape = SubResource("Shape_sofa_handle")
+
+[node name="HandleMarkerRight" type="CSGBox3D" parent="Handles/RightHandle"]
+size = Vector3(0.14, 0.14, 0.5)
+material = SubResource("Mat_handle_marker")
