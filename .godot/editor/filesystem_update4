@@ -1,2 +1,7 @@
 res://scenes/levels/sofa_delivery_level.gd
 res://ui/game_hud.gd
+res://cargo/cargo_body.gd
+res://cargo/carry_controller.gd
+res://networking/state_sync.gd
+res://player/interaction_controller.gd
+res://player/player_controller.gd

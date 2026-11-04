@@ -10,6 +10,7 @@ var _tracked_cargos: Array[CargoBody] = []
 var _tracked_truck: TruckController = null
 var _network_manager: NetworkManager = null
 var _state_sync: StateSync = null
+var _mission_manager: MissionManager = null
 var _net_status_detail: String = "Offline (Press 1: Host LAN | Press 2: Join 127.0.0.1)"
 
 @onready var prompt_panel: PanelContainer = $RootMargin/CenterBottom/PromptPanel
@@ -17,6 +18,9 @@ var _net_status_detail: String = "Offline (Press 1: Host LAN | Press 2: Join 127
 @onready var feedback_label: Label = $RootMargin/CenterBottom/FeedbackLabel
 @onready var status_label: Label = $RootMargin/TopLeftPanel/VBox/StatusLabel
 @onready var net_status_label: Label = get_node_or_null("RootMargin/TopLeftPanel/VBox/NetStatusLabel") as Label
+@onready var mission_panel: PanelContainer = get_node_or_null("RootMargin/TopCenterMissionPanel") as PanelContainer
+@onready var objective_label: Label = get_node_or_null("RootMargin/TopCenterMissionPanel/MissionVBox/ObjectiveLabel") as Label
+@onready var timer_mistakes_label: Label = get_node_or_null("RootMargin/TopCenterMissionPanel/MissionVBox/TimerAndMistakesLabel") as Label
 @onready var debug_panel: PanelContainer = $RootMargin/TopRightDebugPanel
 @onready var debug_label: Label = $RootMargin/TopRightDebugPanel/DebugVBox/DebugStatsLabel
 
@@ -27,6 +31,8 @@ func _ready() -> void:
 		feedback_label.visible = false
 	if debug_panel != null:
 		debug_panel.visible = show_diagnostics_by_default
+	if mission_panel != null:
+		mission_panel.visible = _mission_manager != null
 	_update_net_status_label()
 
 
@@ -57,8 +63,17 @@ func _process(delta: float) -> void:
 		if _feedback_timer <= 0.0 and feedback_label != null:
 			feedback_label.visible = false
 
+	_refresh_mission_banner()
+
 	if debug_panel != null and debug_panel.visible:
 		_refresh_diagnostics_text()
+
+
+func bind_mission_manager(mission_mgr: MissionManager) -> void:
+	_mission_manager = mission_mgr
+	if mission_panel != null:
+		mission_panel.visible = _mission_manager != null
+	_refresh_mission_banner()
 
 
 func bind_to_player(player: PlayerController) -> void:
@@ -159,6 +174,32 @@ func _update_net_status_label() -> void:
 		net_status_label.text = "Network: %s" % _net_status_detail
 
 
+func _refresh_mission_banner() -> void:
+	if _mission_manager == null or not is_instance_valid(_mission_manager):
+		return
+	if mission_panel != null and not mission_panel.visible:
+		mission_panel.visible = true
+	if objective_label != null:
+		objective_label.text = _mission_manager.current_objective_text
+		if _mission_manager.is_completed:
+			objective_label.modulate = Color(0.45, 1.0, 0.58, 1.0)
+		else:
+			objective_label.modulate = Color(1.0, 0.95, 0.68, 1.0)
+
+	if timer_mistakes_label != null:
+		var time_str: String = ScoringSystem.format_time_mm_ss(_mission_manager.elapsed_seconds)
+		var target_str: String = ScoringSystem.format_time_mm_ss(_mission_manager.target_time_seconds)
+		var sofa_dur: float = 100.0
+		if _mission_manager.target_cargo != null and _mission_manager.target_cargo.cargo_damage != null:
+			sofa_dur = _mission_manager.target_cargo.cargo_damage.current_durability
+		timer_mistakes_label.text = "Time: %s / %s  |  Sofa Integrity: %.0f%%  |  Mistakes: %d" % [
+			time_str,
+			target_str,
+			sofa_dur,
+			_mission_manager.major_mistakes_count,
+		]
+
+
 func _refresh_diagnostics_text() -> void:
 	if debug_label == null:
 		return
@@ -186,11 +227,14 @@ func _refresh_diagnostics_text() -> void:
 		var last_imp: float = focus_cargo.cargo_damage.last_impact_speed if focus_cargo.cargo_damage != null else 0.0
 		var thresh: float = focus_cargo.cargo_damage.impact_speed_threshold if focus_cargo.cargo_damage != null else 0.0
 		var force_mag: float = focus_cargo.carry_controller.last_applied_force.length() if focus_cargo.carry_controller != null else 0.0
+		var strain_pct: float = (focus_cargo.carry_controller.current_strain_ratio * 100.0) if focus_cargo.carry_controller != null else 0.0
+		var coord_txt: String = focus_cargo.carry_controller.coordination_state_text if focus_cargo.carry_controller != null else "IDLE"
 
 		lines.append("[Cargo]")
 		lines.append("Item: %s (%s)" % [focus_cargo.get_display_name(), CargoBody.get_state_name(focus_cargo.current_state)])
 		lines.append("Durability: %.0f / %.0f" % [dur_cur, dur_max])
 		lines.append("Carriers: %d / %d | Force: %.0f N" % [focus_cargo.get_carrier_count(), focus_cargo.get_required_carriers(), force_mag])
+		lines.append("Co-op: %s (Strain: %.0f%%)" % [coord_txt, strain_pct])
 		lines.append("Last Impact: %.2f m/s (thresh %.1f)" % [last_imp, thresh])
 
 	if _tracked_truck != null and is_instance_valid(_tracked_truck):

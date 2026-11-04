@@ -13,6 +13,8 @@ var player_spawner: PlayerSpawner = null
 var cargo_manager: CargoManager = null
 var delivery_truck: TruckController = null
 var game_hud: GameHUD = null
+var mission_manager: MissionManager = null
+var results_screen: ResultsScreen = null
 
 var _input_accum: float = 0.0
 var _snapshot_accum: float = 0.0
@@ -24,13 +26,17 @@ func setup(
 	spawner: PlayerSpawner,
 	cargo_mgr: CargoManager,
 	truck: TruckController,
-	hud: GameHUD
+	hud: GameHUD,
+	mission_mgr: MissionManager = null,
+	results_ui: ResultsScreen = null
 ) -> void:
 	network_manager = net_mgr
 	player_spawner = spawner
 	cargo_manager = cargo_mgr
 	delivery_truck = truck
 	game_hud = hud
+	mission_manager = mission_mgr
+	results_screen = results_ui
 
 
 func cycle_simulated_latency() -> String:
@@ -149,6 +155,8 @@ func build_authoritative_snapshot() -> Dictionary:
 	if cargo_manager != null:
 		for cargo: CargoBody in cargo_manager.get_all_cargos():
 			var dur: float = cargo.cargo_damage.current_durability if cargo.cargo_damage != null else 100.0
+			var strn: float = cargo.carry_controller.current_strain_ratio if cargo.carry_controller != null else 0.0
+			var crd: String = cargo.carry_controller.coordination_state_text if cargo.carry_controller != null else "IDLE"
 			cargos_data.append({
 				"cid": cargo.cargo_net_id,
 				"pos": cargo.global_position,
@@ -157,6 +165,8 @@ func build_authoritative_snapshot() -> Dictionary:
 				"st": int(cargo.current_state),
 				"dur": dur,
 				"cnt": cargo.get_carrier_count(),
+				"strn": strn,
+				"crd": crd,
 			})
 
 	var truck_data: Dictionary = {}
@@ -180,10 +190,20 @@ func build_authoritative_snapshot() -> Dictionary:
 			"bsc": bay_sec,
 		}
 
+	var mission_data: Dictionary = {}
+	if mission_manager != null and is_instance_valid(mission_manager):
+		mission_data = {
+			"el": mission_manager.elapsed_seconds,
+			"mst": mission_manager.major_mistakes_count,
+			"cmp": mission_manager.is_completed,
+			"obj": mission_manager.current_objective_text,
+		}
+
 	return {
 		"players": players_data,
 		"cargos": cargos_data,
 		"truck": truck_data,
+		"mission": mission_data,
 	}
 
 
@@ -230,7 +250,9 @@ func apply_world_snapshot_on_client(snapshot: Dictionary) -> void:
 					c_entry.get("vel", Vector3.ZERO),
 					int(c_entry.get("st", 0)),
 					float(c_entry.get("dur", 100.0)),
-					int(c_entry.get("cnt", 0))
+					int(c_entry.get("cnt", 0)),
+					float(c_entry.get("strn", 0.0)),
+					String(c_entry.get("crd", "IDLE"))
 				)
 
 	if delivery_truck != null and snapshot.has("truck"):
@@ -251,6 +273,58 @@ func apply_world_snapshot_on_client(snapshot: Dictionary) -> void:
 				String(t_data.get("bwn", "EMPTY")),
 				bool(t_data.get("bsc", false))
 			)
+
+	if mission_manager != null and snapshot.has("mission"):
+		var m_data: Dictionary = snapshot["mission"]
+		if not m_data.is_empty():
+			mission_manager.apply_client_mission_snapshot(
+				float(m_data.get("el", 0.0)),
+				int(m_data.get("mst", 0)),
+				bool(m_data.get("cmp", false)),
+				String(m_data.get("obj", ""))
+			)
+
+
+func broadcast_mission_completed(summary: Dictionary) -> void:
+	if network_manager != null and network_manager.is_online() and multiplayer.is_server():
+		rpc_show_mission_results.rpc(summary)
+
+
+func broadcast_mission_restarted() -> void:
+	if network_manager != null and network_manager.is_online() and multiplayer.is_server():
+		rpc_mission_restarted.rpc()
+
+
+func request_client_mission_restart() -> void:
+	if network_manager != null and network_manager.is_online() and not multiplayer.is_server():
+		rpc_request_mission_restart.rpc_id(1)
+
+
+@rpc("authority", "call_remote", "reliable")
+func rpc_show_mission_results(summary: Dictionary) -> void:
+	if mission_manager != null:
+		mission_manager.is_completed = true
+		mission_manager.last_score_summary = summary.duplicate(true)
+	if results_screen != null:
+		results_screen.show_results(summary)
+
+
+@rpc("authority", "call_remote", "reliable")
+func rpc_mission_restarted() -> void:
+	if mission_manager != null:
+		mission_manager.reset_mission_state()
+	if results_screen != null:
+		results_screen.hide_results()
+	if game_hud != null:
+		game_hud.show_feedback_message("Host restarted the mission!", false)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func rpc_request_mission_restart() -> void:
+	if not multiplayer.is_server():
+		return
+	if get_parent() != null and get_parent().has_method("restart_full_mission"):
+		get_parent().call("restart_full_mission")
 
 
 @rpc("any_peer", "call_remote", "unreliable_ordered")

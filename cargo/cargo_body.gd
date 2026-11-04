@@ -96,12 +96,18 @@ func apply_authoritative_snapshot(
 	auth_lin_vel: Vector3,
 	auth_state_int: int,
 	auth_durability: float,
-	auth_carriers: int
+	auth_carriers: int,
+	auth_strain: float = 0.0,
+	auth_coord_text: String = "IDLE"
 ) -> void:
 	_interp_target_pos = auth_pos
 	_interp_target_quat = Quaternion.from_euler(auth_rot_euler)
 	linear_velocity = auth_lin_vel
 	_client_carrier_count = auth_carriers
+
+	if carry_controller != null:
+		carry_controller.current_strain_ratio = auth_strain
+		carry_controller.coordination_state_text = auth_coord_text
 
 	var new_state: CargoState = auth_state_int as CargoState
 	if new_state != current_state:
@@ -331,11 +337,16 @@ func interact_with_handle(handle_id: int, actor: Node3D) -> String:
 	if not attached:
 		return "Could not grab handle"
 
-	if get_required_carriers() > 1 and get_carrier_count() < get_required_carriers():
-		return "Grabbed %s (%d/%d carriers — need %d players to lift cleanly)" % [
+	if get_required_carriers() > 1:
+		if get_carrier_count() < get_required_carriers():
+			return "Grabbed %s (%d/%d carriers — need partner on other handle to lift!)" % [
+				get_display_name(),
+				get_carrier_count(),
+				get_required_carriers(),
+			]
+		return "Co-op Lift Active! Carrying %s (%d/%d carriers — Q/R to rotate, E to drop)" % [
 			get_display_name(),
 			get_carrier_count(),
-			get_required_carriers(),
 			get_required_carriers(),
 		]
 	return "Carrying %s (Q/R to rotate, E to drop)" % get_display_name()

@@ -11,13 +11,13 @@ radius = 0.4
 size = Vector3(2.15, 1.5, 2.2)
 
 [sub_resource type="BoxShape3D" id="Shape_bed_floor"]
-size = Vector3(2.2, 0.28, 3.2)
+size = Vector3(2.5, 0.28, 3.3)
 
 [sub_resource type="BoxShape3D" id="Shape_bed_side"]
-size = Vector3(0.18, 1.35, 3.2)
+size = Vector3(0.18, 1.35, 3.3)
 
 [sub_resource type="BoxShape3D" id="Shape_rear_ramp"]
-size = Vector3(1.9, 0.12, 1.25)
+size = Vector3(2.25, 0.12, 1.35)
 
 [sub_resource type="StandardMaterial3D" id="Mat_cab_paint"]
 albedo_color = Color(0.96, 0.65, 0.14, 1)
@@ -101,11 +101,11 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.42, 1.4)
 shape = SubResource("Shape_bed_floor")
 
 [node name="BedWallLeftCollision" type="CollisionShape3D" parent="WalkableBedAndRamp"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.01, 1.15, 1.4)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.18, 1.15, 1.4)
 shape = SubResource("Shape_bed_side")
 
 [node name="BedWallRightCollision" type="CollisionShape3D" parent="WalkableBedAndRamp"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.01, 1.15, 1.4)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.18, 1.15, 1.4)
 shape = SubResource("Shape_bed_side")
 
 [node name="RearRampCollision" type="CollisionShape3D" parent="WalkableBedAndRamp"]
@@ -131,22 +131,22 @@ material = SubResource("Mat_cab_glass")
 
 [node name="BedFloorMesh" type="CSGBox3D" parent="VisualRoot"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.38, 1.4)
-size = Vector3(2.2, 0.36, 3.2)
+size = Vector3(2.5, 0.36, 3.3)
 material = SubResource("Mat_bed_metal")
 
 [node name="BedWallLeftMesh" type="CSGBox3D" parent="VisualRoot"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.01, 1.15, 1.4)
-size = Vector3(0.18, 1.35, 3.2)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.18, 1.15, 1.4)
+size = Vector3(0.18, 1.35, 3.3)
 material = SubResource("Mat_box_panel")
 
 [node name="BedWallRightMesh" type="CSGBox3D" parent="VisualRoot"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.01, 1.15, 1.4)
-size = Vector3(0.18, 1.35, 3.2)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.18, 1.15, 1.4)
+size = Vector3(0.18, 1.35, 3.3)
 material = SubResource("Mat_box_panel")
 
 [node name="RearRampMesh" type="CSGBox3D" parent="VisualRoot"]
 transform = Transform3D(1, 0, 0, 0, 0.965926, 0.258819, 0, -0.258819, 0.965926, 0, 0.34, 3.5)
-size = Vector3(1.9, 0.12, 1.25)
+size = Vector3(2.25, 0.12, 1.35)
 material = SubResource("Mat_bed_metal")
 
 [node name="WheelFL" type="Node3D" parent="VisualRoot"]
@@ -180,8 +180,8 @@ mesh = SubResource("Mesh_wheel")
 [node name="CargoBay" type="Area3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.56, 1.4)
 script = ExtResource("2_cargo_bay")
-bay_half_width = 0.75
-bay_half_length = 1.25
+bay_half_width = 0.85
+bay_half_length = 1.3
 bed_floor_y = 0.44
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="CargoBay"]

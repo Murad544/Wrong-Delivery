@@ -28,6 +28,7 @@ var net_wants_sprint: bool = false
 var net_wants_jump: bool = false
 var net_cam_yaw_deg: float = 0.0
 var net_rotate_dir: float = 0.0
+var last_move_intent_world: Vector3 = Vector3.ZERO
 
 # Client-side interpolation targets
 var _has_net_snapshot: bool = false
@@ -195,8 +196,14 @@ func apply_movement_step(
 		velocity.y = jump_velocity
 
 	var move_direction: Vector3 = compute_world_move_direction(input_vector)
+	last_move_intent_world = move_direction
 	var target_speed: float = get_target_move_speed(wants_sprint)
 	var target_horizontal_velocity: Vector3 = move_direction * target_speed
+
+	# Apply gentle handle-stretch leash when carrying blocked/disagreed cargo so carriers feel resistance
+	if is_holding_any_cargo() and held_cargo != null and held_cargo.carry_controller != null:
+		var leash_pull: Vector3 = held_cargo.carry_controller.compute_carrier_leash_pullback(self)
+		target_horizontal_velocity += leash_pull
 
 	var horizontal_velocity: Vector3 = Vector3(velocity.x, 0.0, velocity.z)
 	var accel_rate: float = _choose_acceleration_rate(move_direction, is_on_floor())
@@ -225,10 +232,17 @@ func compute_world_move_direction(input_vector: Vector2) -> Vector3:
 	return direction.normalized()
 
 
+func get_world_move_intent() -> Vector3:
+	return last_move_intent_world
+
+
 func get_target_move_speed(wants_sprint: bool) -> float:
 	if is_carrying_heavy_cargo or is_holding_any_cargo():
-		if held_cargo != null and held_cargo.get_required_carriers() > 1 and held_cargo.get_carrier_count() < held_cargo.get_required_carriers():
-			return carry_speed * 0.45
+		if held_cargo != null:
+			if held_cargo.get_required_carriers() > 1 and held_cargo.get_carrier_count() < held_cargo.get_required_carriers():
+				return carry_speed * 0.35
+			if held_cargo.carry_controller != null:
+				return carry_speed * held_cargo.carry_controller.coop_speed_multiplier
 		return carry_speed
 	if wants_sprint:
 		return sprint_speed

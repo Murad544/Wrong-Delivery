@@ -1,0 +1,66 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://ui/results_screen.gd" id="1_res_script"]
+
+[node name="ResultsScreen" type="CanvasLayer"]
+layer = 10
+script = ExtResource("1_res_script")
+
+[node name="OverlayBackground" type="ColorRect" parent="."]
+visible = false
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.06, 0.09, 0.14, 0.82)
+
+[node name="CenterContainer" type="CenterContainer" parent="OverlayBackground"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="CardPanel" type="PanelContainer" parent="OverlayBackground/CenterContainer"]
+custom_minimum_size = Vector2(520, 380)
+layout_mode = 2
+
+[node name="Margin" type="MarginContainer" parent="OverlayBackground/CenterContainer/CardPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 28
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 28
+theme_override_constants/margin_bottom = 24
+
+[node name="VBox" type="VBoxContainer" parent="OverlayBackground/CenterContainer/CardPanel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="TitleLabel" type="Label" parent="OverlayBackground/CenterContainer/CardPanel/Margin/VBox"]
+layout_mode = 2
+horizontal_alignment = 1
+text = "DELIVERY COMPLETE — The Impossible Sofa"
+
+[node name="RatingLabel" type="Label" parent="OverlayBackground/CenterContainer/CardPanel/Margin/VBox"]
+layout_mode = 2
+modulate = Color(1, 0.88, 0.28, 1)
+horizontal_alignment = 1
+text = "Rating: S — Miracle Movers!"
+
+[node name="BreakdownLabel" type="Label" parent="OverlayBackground/CenterContainer/CardPanel/Margin/VBox"]
+layout_mode = 2
+text = "Elapsed Time: 01:45 (Target: 05:00)
+Cargo Durability: 100 / 100"
+
+[node name="ScoreLabel" type="Label" parent="OverlayBackground/CenterContainer/CardPanel/Margin/VBox"]
+layout_mode = 2
+modulate = Color(0.45, 1, 0.62, 1)
+horizontal_alignment = 1
+text = "FINAL SCORE: 100 / 100"
+
+[node name="RestartButton" type="Button" parent="OverlayBackground/CenterContainer/CardPanel/Margin/VBox"]
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 2
+text = "Play Again / Restart Mission (Enter)"

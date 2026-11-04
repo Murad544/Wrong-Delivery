@@ -212,6 +212,14 @@ func _update_best_target(force_emit: bool = false) -> void:
 		var held: CargoBody = player_body.get("held_cargo") as CargoBody
 		var held_name: String = held.get_display_name() if held != null else "Cargo"
 		var carry_prompt: String = "E — Drop %s  |  Q / R — Rotate" % held_name
+		if held != null and held.carry_controller != null and held.get_required_carriers() > 1:
+			var strain_pct: float = held.carry_controller.current_strain_ratio * 100.0
+			var coord_txt: String = held.carry_controller.coordination_state_text
+			carry_prompt = "E — Drop %s  |  Q/R — Rotate  |  [%s | Strain: %.0f%%]" % [
+				held_name,
+				coord_txt,
+				strain_pct,
+			]
 		if force_emit or carry_prompt != _last_prompt_text or not _last_prompt_valid:
 			_last_prompt_text = carry_prompt
 			_last_prompt_valid = true
