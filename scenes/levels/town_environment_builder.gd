@@ -8,10 +8,49 @@ extends Node3D
 			_build_town()
 
 var _mats: Dictionary = {}
+var _physics_props: Array[Dictionary] = []
+var _patrol_vans: Array[Dictionary] = []
 
 
 func _ready() -> void:
 	_build_town()
+
+
+func _physics_process(delta: float) -> void:
+	if Engine.is_editor_hint() or _patrol_vans.is_empty():
+		return
+	for van_rec: Dictionary in _patrol_vans:
+		var body: AnimatableBody3D = van_rec.get("body") as AnimatableBody3D
+		if body == null or not is_instance_valid(body):
+			continue
+		var p_start: Vector3 = van_rec.get("start", Vector3.ZERO)
+		var p_end: Vector3 = van_rec.get("end", Vector3.ZERO)
+		var spd: float = float(van_rec.get("speed", 5.5))
+		var t_val: float = float(van_rec.get("t", 0.0))
+		var dir_sign: float = float(van_rec.get("dir", 1.0))
+		var seg_len: float = maxf(p_start.distance_to(p_end), 1.0)
+		t_val += (spd / seg_len) * dir_sign * delta
+		if t_val >= 1.0:
+			t_val = 1.0
+			dir_sign = -1.0
+		elif t_val <= 0.0:
+			t_val = 0.0
+			dir_sign = 1.0
+		van_rec["t"] = t_val
+		van_rec["dir"] = dir_sign
+		body.position = p_start.lerp(p_end, t_val)
+		var travel_dir: Vector3 = (p_end - p_start).normalized() * dir_sign
+		if travel_dir.length_squared() > 0.001:
+			body.rotation.y = atan2(-travel_dir.x, -travel_dir.z)
+
+
+func reset_dynamic_props() -> void:
+	for rec: Dictionary in _physics_props:
+		var rb: RigidBody3D = rec.get("body") as RigidBody3D
+		if rb != null and is_instance_valid(rb):
+			rb.linear_velocity = Vector3.ZERO
+			rb.angular_velocity = Vector3.ZERO
+			rb.transform = rec.get("spawn_tf", Transform3D.IDENTITY)
 
 
 func _init_materials() -> void:
@@ -77,6 +116,9 @@ func _build_town() -> void:
 		remove_child(existing)
 		existing.queue_free()
 
+	_physics_props.clear()
+	_patrol_vans.clear()
+
 	var root_node: Node3D = Node3D.new()
 	root_node.name = "GeneratedTown"
 	add_child(root_node)
@@ -87,6 +129,7 @@ func _build_town() -> void:
 	_build_town_square_and_park(root_node)
 	_build_maple_street_neighborhood(root_node)
 	_build_streetlights_and_props(root_node)
+	_build_dynamic_traffic_and_props(root_node)
 	_build_map_perimeter_and_boundaries(root_node)
 
 
@@ -693,3 +736,126 @@ func _add_static_cylinder(
 	mi.mesh = cm
 	sb.add_child(mi)
 	return sb
+
+
+func _build_dynamic_traffic_and_props(parent: Node3D) -> void:
+	var dyn_root: Node3D = Node3D.new()
+	dyn_root.name = "DynamicTrafficAndProps"
+	parent.add_child(dyn_root)
+
+	# 1. Knockable Physics Traffic Cones & Barrels along Roadwork Chicane, Roundabout, and Maple St
+	var cone_positions: Array[Vector3] = [
+		Vector3(-3.8, 0.38, 48.0),
+		Vector3(-1.0, 0.38, 49.5),
+		Vector3(-0.6, 0.38, 52.5),
+		Vector3(0.6, 0.38, 58.0),
+		Vector3(1.2, 0.38, 61.5),
+		Vector3(3.8, 0.38, 63.0),
+		Vector3(-4.2, 0.38, 99.0),
+		Vector3(4.2, 0.38, 99.0),
+		Vector3(87.2, 0.38, 58.5),
+		Vector3(87.2, 0.38, 63.5),
+	]
+	for cp: Vector3 in cone_positions:
+		_add_physics_traffic_cone(dyn_root, cp)
+
+	# 2. Moving Town Traffic Vans (cruising along outer lanes of Commerce Blvd & Riverview Ave)
+	_add_patrol_van(
+		dyn_root,
+		"TownPostalVan",
+		Vector3(3.1, 0.0, 76.0),
+		Vector3(3.1, 0.0, 32.0),
+		4.8,
+		"wall_blue"
+	)
+	_add_patrol_van(
+		dyn_root,
+		"BakeryDeliveryVan",
+		Vector3(18.0, 0.0, 102.8),
+		Vector3(35.0, 0.0, 102.8),
+		4.2,
+		"wall_bakery"
+	)
+
+
+func _add_physics_traffic_cone(parent: Node3D, pos: Vector3) -> void:
+	var rb: RigidBody3D = RigidBody3D.new()
+	rb.position = pos
+	rb.mass = 1.8
+	rb.collision_layer = 1
+	rb.collision_mask = 1 | 2 | 8 | 16
+	parent.add_child(rb)
+
+	var col: CollisionShape3D = CollisionShape3D.new()
+	var shape: CylinderShape3D = CylinderShape3D.new()
+	shape.radius = 0.28
+	shape.height = 0.72
+	col.shape = shape
+	rb.add_child(col)
+
+	var cone_mi: MeshInstance3D = MeshInstance3D.new()
+	var cone_mesh: CylinderMesh = CylinderMesh.new()
+	cone_mesh.top_radius = 0.06
+	cone_mesh.bottom_radius = 0.28
+	cone_mesh.height = 0.72
+	cone_mesh.radial_segments = 12
+	cone_mesh.material = _mats["hazard_orange"]
+	cone_mi.mesh = cone_mesh
+	rb.add_child(cone_mi)
+
+	var stripe_mi: MeshInstance3D = MeshInstance3D.new()
+	stripe_mi.position = Vector3(0.0, 0.08, 0.0)
+	var stripe_mesh: CylinderMesh = CylinderMesh.new()
+	stripe_mesh.top_radius = 0.11
+	stripe_mesh.bottom_radius = 0.17
+	stripe_mesh.height = 0.18
+	stripe_mesh.radial_segments = 12
+	stripe_mesh.material = _mats["lane_white"]
+	stripe_mi.mesh = stripe_mesh
+	rb.add_child(stripe_mi)
+
+	_physics_props.append({
+		"body": rb,
+		"spawn_tf": rb.transform,
+	})
+
+
+func _add_patrol_van(
+	parent: Node3D,
+	van_name: String,
+	start_pos: Vector3,
+	end_pos: Vector3,
+	speed: float,
+	body_mat_key: String
+) -> void:
+	var van: AnimatableBody3D = AnimatableBody3D.new()
+	van.name = van_name
+	van.position = start_pos
+	van.sync_to_physics = false
+	van.collision_layer = 1
+	van.collision_mask = 0
+	parent.add_child(van)
+
+	var col: CollisionShape3D = CollisionShape3D.new()
+	col.position = Vector3(0.0, 1.0, 0.0)
+	var box_sh: BoxShape3D = BoxShape3D.new()
+	box_sh.size = Vector3(1.85, 1.8, 3.6)
+	col.shape = box_sh
+	van.add_child(col)
+
+	_add_visual_box(van, Vector3(0.0, 1.05, 0.0), Vector3(1.85, 1.5, 3.5), body_mat_key)
+	_add_visual_box(van, Vector3(0.0, 1.35, -1.76), Vector3(1.6, 0.55, 0.06), "window_glass")
+	_add_visual_box(van, Vector3(0.0, 1.84, 0.1), Vector3(1.7, 0.12, 2.8), "lane_white")
+
+	for wx: float in [-0.88, 0.88]:
+		for wz: float in [-1.1, 1.1]:
+			_add_visual_box(van, Vector3(wx, 0.35, wz), Vector3(0.22, 0.65, 0.65), "asphalt_dark")
+
+	_patrol_vans.append({
+		"body": van,
+		"start": start_pos,
+		"end": end_pos,
+		"speed": speed,
+		"t": 0.0,
+		"dir": 1.0,
+	})

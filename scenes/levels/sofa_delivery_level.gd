@@ -18,6 +18,7 @@ var mission_manager: MissionManager = null
 @onready var delivery_zone: DeliveryZone = get_node_or_null("DeliveryZone") as DeliveryZone
 @onready var results_screen: ResultsScreen = get_node_or_null("ResultsScreen") as ResultsScreen
 @onready var delivery_terminal: InteractableTarget = get_node_or_null("Interactables/DeliveryTerminal") as InteractableTarget
+@onready var town_builder: TownEnvironmentBuilder = get_node_or_null("BlockoutGeometry/TownBuilder") as TownEnvironmentBuilder
 
 
 func _enter_tree() -> void:
@@ -39,11 +40,12 @@ func _ready() -> void:
 		player_spawner.setup(self, player, spawn_tf, delivery_truck)
 
 	var primary_sofa: CargoBody = get_node_or_null("CargoItems/WarehouseSofa") as CargoBody
+	var bonus_crate: CargoBody = get_node_or_null("CargoItems/WarehouseCrate") as CargoBody
 	if primary_sofa == null and not _cargo_items.is_empty():
 		primary_sofa = _cargo_items[0]
 
 	if mission_manager != null:
-		mission_manager.setup(primary_sofa, delivery_truck, delivery_zone)
+		mission_manager.setup(primary_sofa, delivery_truck, delivery_zone, bonus_crate)
 		if not mission_manager.mission_completed.is_connected(_on_mission_completed):
 			mission_manager.mission_completed.connect(_on_mission_completed)
 
@@ -105,6 +107,9 @@ func reset_all_cargo() -> void:
 	if delivery_truck != null and is_instance_valid(delivery_truck):
 		delivery_truck.reset_to_spawn()
 
+	if town_builder != null and is_instance_valid(town_builder):
+		town_builder.reset_dynamic_props()
+
 	for cargo: CargoBody in _cargo_items:
 		if cargo != null and is_instance_valid(cargo):
 			cargo.reset_to_spawn()
@@ -117,6 +122,10 @@ func reset_all_cargo() -> void:
 func restart_full_mission() -> void:
 	if delivery_truck != null and is_instance_valid(delivery_truck):
 		delivery_truck.reset_to_spawn()
+		delivery_truck.drift_boost_count = 0
+
+	if town_builder != null and is_instance_valid(town_builder):
+		town_builder.reset_dynamic_props()
 
 	for cargo: CargoBody in _cargo_items:
 		if cargo != null and is_instance_valid(cargo):

@@ -1,6 +1,6 @@
 extends SceneTree
 
-func _init() -> void:
+func _initialize() -> void:
 	var failures: Array[String] = []
 
 	# 1. Verify deterministic ScoringSystem math (AGENTS.md §7)
@@ -25,6 +25,8 @@ func _init() -> void:
 
 	var level: SofaDeliveryLevel = level_packed.instantiate() as SofaDeliveryLevel
 	root.add_child(level)
+	await process_frame
+	await physics_frame
 
 	var sofa: CargoBody = level.get_node_or_null("CargoItems/WarehouseSofa") as CargoBody
 	var zone: DeliveryZone = level.delivery_zone
@@ -39,6 +41,11 @@ func _init() -> void:
 		var generated_town: Node = level.get_node_or_null("BlockoutGeometry/TownBuilder/GeneratedTown")
 		if generated_town == null or generated_town.get_child_count() < 6:
 			failures.append("TownEnvironmentBuilder should generate small town districts, river bridge, and perimeter hills")
+		var dyn_traffic: Node = level.get_node_or_null("BlockoutGeometry/TownBuilder/GeneratedTown/DynamicTrafficAndProps")
+		if dyn_traffic == null or dyn_traffic.get_child_count() < 8:
+			failures.append("TownEnvironmentBuilder should generate knockable physics traffic cones and patrol vans")
+		if p1.character_rig == null:
+			failures.append("PlayerController should have procedural articulated CharacterRig")
 		if zone.global_position.x < 100.0:
 			failures.append("Expected DeliveryZone at expanded Maple St cul-de-sac (x >= 100), got %s" % str(zone.global_position))
 

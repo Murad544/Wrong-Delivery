@@ -1,6 +1,6 @@
 extends SceneTree
 
-func _init() -> void:
+func _initialize() -> void:
 	var failures: Array[String] = []
 
 	var level_packed: PackedScene = load("res://scenes/levels/sofa_delivery.tscn") as PackedScene
@@ -10,6 +10,8 @@ func _init() -> void:
 
 	var level: Node = level_packed.instantiate()
 	root.add_child(level)
+	await process_frame
+	await physics_frame
 
 	var player: PlayerController = level.get_node_or_null("Player") as PlayerController
 	var truck: TruckController = level.get_node_or_null("DeliveryTruck") as TruckController
@@ -54,6 +56,15 @@ func _init() -> void:
 		truck.apply_driving_step(0.5, 1.0, 0.5, false)
 		if truck.forward_speed <= 0.0:
 			failures.append("Truck should accelerate forward on positive throttle")
+
+		# Verify Arcade Drift & Mini-Turbo Drift Boost mechanic
+		truck.forward_speed = 10.0
+		truck.apply_driving_step(0.8, 1.0, 1.0, true) # Handbrake + Full Left Steer at 10 m/s
+		if not truck.is_drifting or truck.drift_charge_ratio < 0.85:
+			failures.append("Truck should enter drift mode and charge drift boost when handbraking + steering at speed")
+		truck.apply_driving_step(0.1, 1.0, 0.0, false) # Release handbrake -> trigger Drift Boost!
+		if truck.drift_boost_timer <= 0.0 or truck.drift_boost_count < 1:
+			failures.append("Releasing handbrake after a charged drift should trigger Mini-Turbo Drift Boost")
 
 		truck.forward_speed = 8.0
 		var fast_exit: Dictionary = truck.try_exit_vehicle(player)

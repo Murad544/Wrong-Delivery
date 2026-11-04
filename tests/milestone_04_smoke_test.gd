@@ -1,6 +1,6 @@
 extends SceneTree
 
-func _init() -> void:
+func _initialize() -> void:
 	var failures: Array[String] = []
 
 	var level_packed: PackedScene = load("res://scenes/levels/sofa_delivery.tscn") as PackedScene
@@ -10,6 +10,8 @@ func _init() -> void:
 
 	var level: SofaDeliveryLevel = level_packed.instantiate() as SofaDeliveryLevel
 	root.add_child(level)
+	await process_frame
+	await physics_frame
 
 	var net_mgr: NetworkManager = level.network_manager
 	var spawner: PlayerSpawner = level.player_spawner

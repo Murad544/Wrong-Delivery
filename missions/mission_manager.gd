@@ -9,6 +9,7 @@ signal mission_restarted()
 @export_range(5, 50, 5) var penalty_per_major_mistake: int = 15
 
 var target_cargo: CargoBody = null
+var bonus_cargo: CargoBody = null
 var delivery_truck: TruckController = null
 var delivery_zone: DeliveryZone = null
 
@@ -22,11 +23,13 @@ var last_score_summary: Dictionary = {}
 func setup(
 	primary_cargo: CargoBody,
 	truck: TruckController,
-	zone: DeliveryZone
+	zone: DeliveryZone,
+	optional_bonus_cargo: CargoBody = null
 ) -> void:
 	target_cargo = primary_cargo
 	delivery_truck = truck
 	delivery_zone = zone
+	bonus_cargo = optional_bonus_cargo
 
 	if delivery_zone != null and not delivery_zone.cargo_delivered.is_connected(_on_zone_cargo_delivered):
 		delivery_zone.cargo_delivered.connect(_on_zone_cargo_delivered)
@@ -88,16 +91,29 @@ func _on_zone_cargo_delivered(cargo: CargoBody) -> void:
 		cur_dur = cargo.cargo_damage.current_durability
 		max_dur = cargo.cargo_damage.max_durability
 
+	var bonus_pts: int = 0
+	var bonus_parcel_delivered: bool = false
+	if bonus_cargo != null and is_instance_valid(bonus_cargo) and delivery_zone != null:
+		if bonus_cargo.current_state == CargoBody.CargoState.FREE and bonus_cargo.global_position.distance_to(delivery_zone.global_position) <= 6.5:
+			bonus_parcel_delivered = true
+			bonus_pts += 10
+
+	var drift_boosts: int = delivery_truck.drift_boost_count if delivery_truck != null else 0
+	bonus_pts += mini(drift_boosts * 3, 9)
+
 	last_score_summary = ScoringSystem.calculate_mission_score(
 		cur_dur,
 		max_dur,
 		elapsed_seconds,
 		target_time_seconds,
 		major_mistakes_count,
-		penalty_per_major_mistake
+		penalty_per_major_mistake,
+		bonus_pts
 	)
 	last_score_summary["contract_name"] = contract_name
 	last_score_summary["cargo_name"] = cargo.get_display_name() if cargo != null else "The Impossible Sofa"
+	last_score_summary["bonus_parcel_delivered"] = bonus_parcel_delivered
+	last_score_summary["drift_boosts"] = drift_boosts
 	mission_completed.emit(last_score_summary)
 
 

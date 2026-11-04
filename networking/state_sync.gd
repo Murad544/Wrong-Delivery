@@ -183,6 +183,10 @@ func build_authoritative_snapshot() -> Dictionary:
 			"str": delivery_truck.current_steer_angle_rad,
 			"lat": delivery_truck.lateral_acceleration,
 			"hbk": delivery_truck.is_handbrake_active,
+			"drf": delivery_truck.is_drifting,
+			"slp": delivery_truck.drift_slip_angle_rad,
+			"dch": delivery_truck.drift_charge_ratio,
+			"dbt": delivery_truck.drift_boost_timer,
 			"drv": drv_pid,
 			"pas": pas_pid,
 			"bst": bay_stab,
@@ -262,6 +266,10 @@ func apply_world_snapshot_on_client(snapshot: Dictionary) -> void:
 			var pas_id: int = int(t_data.get("pas", 0))
 			delivery_truck.driver_actor = player_spawner.get_player(drv_id) if (drv_id > 0 and player_spawner != null) else null
 			delivery_truck.passenger_actor = player_spawner.get_player(pas_id) if (pas_id > 0 and player_spawner != null) else null
+			delivery_truck.is_drifting = bool(t_data.get("drf", false))
+			delivery_truck.drift_slip_angle_rad = float(t_data.get("slp", 0.0))
+			delivery_truck.drift_charge_ratio = float(t_data.get("dch", 0.0))
+			delivery_truck.drift_boost_timer = float(t_data.get("dbt", 0.0))
 			delivery_truck.apply_authoritative_snapshot(
 				t_data.get("pos", delivery_truck.global_position),
 				float(t_data.get("yaw", delivery_truck.rotation.y)),

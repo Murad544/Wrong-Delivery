@@ -1,8 +1,9 @@
-[gd_scene load_steps=11 format=3]
+[gd_scene load_steps=12 format=3]
 
 [ext_resource type="Script" path="res://player/player_controller.gd" id="1_player_ctrl"]
 [ext_resource type="Script" path="res://player/player_camera.gd" id="2_player_cam"]
 [ext_resource type="Script" path="res://player/interaction_controller.gd" id="3_inter_ctrl"]
+[ext_resource type="Script" path="res://player/character_rig.gd" id="4_char_rig"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_body"]
 radius = 0.38
@@ -44,15 +45,21 @@ shape = SubResource("CapsuleShape3D_body")
 
 [node name="VisualRoot" type="Node3D" parent="."]
 
+[node name="CharacterRig" type="Node3D" parent="VisualRoot"]
+script = ExtResource("4_char_rig")
+
 [node name="BodyMesh" type="MeshInstance3D" parent="VisualRoot"]
+visible = false
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
 mesh = SubResource("CapsuleMesh_body")
 
 [node name="VisorMesh" type="MeshInstance3D" parent="VisualRoot"]
+visible = false
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.48, -0.28)
 mesh = SubResource("BoxMesh_visor")
 
 [node name="BackpackMesh" type="MeshInstance3D" parent="VisualRoot"]
+visible = false
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.02, 0.3)
 mesh = SubResource("BoxMesh_pack")
 

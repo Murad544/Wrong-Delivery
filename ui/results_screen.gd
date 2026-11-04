@@ -45,6 +45,7 @@ func show_results(summary: Dictionary) -> void:
 	var ovt_pen: int = int(summary.get("overtime_penalty", 0))
 	var mst_pen: int = int(summary.get("major_mistake_penalty", 0))
 	var mst_cnt: int = int(summary.get("major_mistakes_count", 0))
+	var bonus_pts: int = int(summary.get("bonus_points", 0))
 	var final_sc: int = int(summary.get("final_score", 100))
 
 	if title_label != null:
@@ -59,7 +60,8 @@ func show_results(summary: Dictionary) -> void:
 			+ "Base Delivery Score:       100\n"
 			+ "Damage Penalty:            -%d\n"
 			+ "Overtime Penalty:          -%d\n"
-			+ "Major Mistakes (%d):       -%d"
+			+ "Major Mistakes (%d):       -%d\n"
+			+ "Style & Parcel Bonus:      +%d"
 		) % [
 			ScoringSystem.format_time_mm_ss(elapsed),
 			ScoringSystem.format_time_mm_ss(target_t),
@@ -69,6 +71,7 @@ func show_results(summary: Dictionary) -> void:
 			ovt_pen,
 			mst_cnt,
 			mst_pen,
+			bonus_pts,
 		]
 	if score_label != null:
 		score_label.text = "FINAL SCORE: %d / 100" % final_sc

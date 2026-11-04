@@ -1,6 +1,6 @@
 extends SceneTree
 
-func _init() -> void:
+func _initialize() -> void:
 	var failures: Array[String] = []
 
 	var level_packed: PackedScene = load("res://scenes/levels/sofa_delivery.tscn") as PackedScene
@@ -10,6 +10,8 @@ func _init() -> void:
 
 	var level_instance: Node = level_packed.instantiate()
 	root.add_child(level_instance)
+	await process_frame
+	await physics_frame
 
 	var player: PlayerController = level_instance.get_node_or_null("Player") as PlayerController
 	if player == null:

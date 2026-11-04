@@ -39,20 +39,33 @@ func _process(delta: float) -> void:
 		_manual_look_cooldown = maxf(0.0, _manual_look_cooldown - delta)
 
 	if _in_vehicle and _tracked_vehicle != null and is_instance_valid(_tracked_vehicle):
+		var spd: float = absf(float(_tracked_vehicle.get("forward_speed")))
+		var is_drifting_flag: bool = bool(_tracked_vehicle.get("is_drifting"))
+		var boost_t: float = float(_tracked_vehicle.get("drift_boost_timer"))
+		if camera != null:
+			var target_fov: float = 70.0 + clampf((spd - 5.0) * 0.65, 0.0, 6.0)
+			if is_drifting_flag:
+				target_fov += 2.5
+			if boost_t > 0.0:
+				target_fov += 4.5
+			camera.fov = lerpf(camera.fov, target_fov, clampf(delta * 6.0, 0.0, 1.0))
+
 		if _manual_look_cooldown <= 0.0 and vehicle_auto_follow_speed > 0.0:
-			var spd: float = absf(float(_tracked_vehicle.get("forward_speed")))
 			if spd > 0.8:
 				var target_yaw_rad: float = _tracked_vehicle.global_rotation.y
 				if float(_tracked_vehicle.get("forward_speed")) < -0.5:
 					target_yaw_rad = wrapf(target_yaw_rad + PI, -PI, PI)
 				var current_yaw_rad: float = deg_to_rad(_yaw_degrees)
+				var follow_rate: float = vehicle_auto_follow_speed * (1.35 if is_drifting_flag else 1.0)
 				var new_yaw_rad: float = lerp_angle(
 					current_yaw_rad,
 					target_yaw_rad,
-					clampf(vehicle_auto_follow_speed * delta, 0.0, 1.0)
+					clampf(follow_rate * delta, 0.0, 1.0)
 				)
 				_yaw_degrees = rad_to_deg(new_yaw_rad)
 				_apply_rotations()
+	elif camera != null and not is_equal_approx(camera.fov, 70.0):
+		camera.fov = lerpf(camera.fov, 70.0, clampf(delta * 8.0, 0.0, 1.0))
 
 
 func _unhandled_input(event: InputEvent) -> void:

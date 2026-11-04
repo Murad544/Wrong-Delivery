@@ -1,6 +1,6 @@
 extends SceneTree
 
-func _init() -> void:
+func _initialize() -> void:
 	var failures: Array[String] = []
 
 	var playground_packed: PackedScene = load("res://scenes/levels/physics_playground.tscn") as PackedScene
@@ -10,6 +10,8 @@ func _init() -> void:
 
 	var playground: Node = playground_packed.instantiate()
 	root.add_child(playground)
+	await process_frame
+	await physics_frame
 
 	var player: PlayerController = playground.get_node_or_null("Player") as PlayerController
 	var crate: CargoBody = playground.get_node_or_null("CargoItems/StandardCrate") as CargoBody

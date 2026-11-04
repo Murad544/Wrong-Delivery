@@ -125,6 +125,8 @@ func register_truck(truck: TruckController) -> void:
 	if truck == null:
 		return
 	_tracked_truck = truck
+	if not truck.truck_feedback.is_connected(show_feedback_message):
+		truck.truck_feedback.connect(show_feedback_message)
 	if truck.cargo_bay != null:
 		truck.cargo_bay.cargo_loaded.connect(
 			func(c: CargoBody) -> void:
@@ -248,12 +250,14 @@ func _refresh_diagnostics_text() -> void:
 		var stab_pct: float = (bay.current_stability_ratio * 100.0) if bay != null else 100.0
 		var bay_warn: String = bay.current_warning_text if bay != null else "EMPTY"
 
+		var drift_state: String = "BOOSTING!" if _tracked_truck.drift_boost_timer > 0.0 else ("DRIFTING (%.0f%%)" % (_tracked_truck.drift_charge_ratio * 100.0) if _tracked_truck.is_drifting else "GRIP")
 		lines.append("")
 		lines.append("[Delivery Truck]")
 		lines.append("Role: %s | Speed: %.1f m/s (%.0f km/h)" % [seat_str, spd, kmh])
-		lines.append("Lat Accel: %.2f m/s² | Handbrake: %s" % [
+		lines.append("Handling: %s | Lat Accel: %.2f m/s² | Boosts: %d" % [
+			drift_state,
 			_tracked_truck.lateral_acceleration,
-			"ON" if _tracked_truck.is_handbrake_active else "OFF"
+			_tracked_truck.drift_boost_count
 		])
 		lines.append("Cargo Bay: %d item(s) | Stability: %.0f%%" % [bay_count, stab_pct])
 		lines.append("Bay Status: %s" % bay_warn)

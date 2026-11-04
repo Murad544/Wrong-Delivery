@@ -10,8 +10,12 @@ extends CharacterBody3D
 @export_group("Acceleration & Feel")
 @export_range(5.0, 50.0, 0.5) var acceleration: float = 20.0
 @export_range(5.0, 60.0, 0.5) var deceleration: float = 26.0
-@export_range(1.0, 30.0, 0.5) var air_acceleration: float = 7.0
-@export_range(2.0, 25.0, 0.5) var rotation_speed: float = 12.0
+@export_range(1.0, 30.0, 0.5) var air_acceleration: float = 9.5
+@export_range(2.0, 25.0, 0.5) var rotation_speed: float = 14.0
+@export_range(0.05, 0.3, 0.01) var coyote_time_seconds: float = 0.14
+@export_range(0.05, 0.3, 0.01) var jump_buffer_seconds: float = 0.14
+@export_range(1.0, 2.2, 0.05) var fall_gravity_multiplier: float = 1.45
+@export_range(0.5, 8.0, 0.25) var rigid_body_push_force: float = 2.8
 
 @export_group("State")
 @export var is_carrying_heavy_cargo: bool = false
@@ -37,9 +41,13 @@ var _interp_target_vel: Vector3 = Vector3.ZERO
 var _interp_target_visual_yaw: float = 0.0
 
 var _gravity: float = float(ProjectSettings.get_setting("physics/3d/default_gravity", 9.8))
+var _coyote_timer: float = 0.0
+var _jump_buffer_timer: float = 0.0
+var _stun_timer: float = 0.0
 
 @onready var collision_shape: CollisionShape3D = $CollisionShape3D
 @onready var visual_root: Node3D = $VisualRoot
+@onready var character_rig: CharacterRig = get_node_or_null("VisualRoot/CharacterRig") as CharacterRig
 @onready var body_mesh: MeshInstance3D = get_node_or_null("VisualRoot/BodyMesh") as MeshInstance3D
 @onready var player_camera: PlayerCamera = $PlayerCamera
 @onready var interaction_controller: InteractionController = $InteractionController
@@ -71,17 +79,20 @@ func configure_network_role(assigned_peer_id: int, local_controlled: bool) -> vo
 
 
 func apply_player_color_for_peer(id: int) -> void:
-	if body_mesh == null:
-		return
-	var mat: StandardMaterial3D = StandardMaterial3D.new()
-	mat.roughness = 0.7
-	if id == 1:
-		mat.albedo_color = Color(0.95, 0.48, 0.16, 1.0) # Host: Delivery Orange
-	elif id % 2 == 0:
-		mat.albedo_color = Color(0.18, 0.62, 0.92, 1.0) # Client 2: Cobalt / Sky Blue
-	else:
-		mat.albedo_color = Color(0.28, 0.82, 0.46, 1.0) # Client 3+: Emerald Green
-	body_mesh.material_override = mat
+	var uniform_col: Color = Color(0.95, 0.48, 0.16, 1.0) # Host: Delivery Orange
+	if id % 2 == 0:
+		uniform_col = Color(0.18, 0.62, 0.92, 1.0) # Client 2: Cobalt / Sky Blue
+	elif id > 1:
+		uniform_col = Color(0.28, 0.82, 0.46, 1.0) # Client 3+: Emerald Green
+
+	if character_rig != null:
+		character_rig.set_uniform_color(uniform_col)
+
+	if body_mesh != null:
+		var mat: StandardMaterial3D = StandardMaterial3D.new()
+		mat.roughness = 0.7
+		mat.albedo_color = uniform_col
+		body_mesh.material_override = mat
 
 
 func is_host_simulation() -> bool:
@@ -98,11 +109,15 @@ func _physics_process(delta: float) -> void:
 
 	if not is_host_simulation():
 		_interpolate_client_state(delta)
+		_update_character_rig_animation(delta, false)
 		return
 
 	if is_seated_in_vehicle():
 		velocity = Vector3.ZERO
 		return
+
+	if _stun_timer > 0.0:
+		_stun_timer = maxf(0.0, _stun_timer - delta)
 
 	var input_vector: Vector2 = Vector2.ZERO
 	var wants_sprint: bool = false
@@ -130,8 +145,14 @@ func _physics_process(delta: float) -> void:
 		wants_jump = net_wants_jump
 		net_wants_jump = false # Consume one-shot jump intent
 
+	if _stun_timer > 0.0:
+		input_vector *= 0.25
+		wants_jump = false
+
 	apply_movement_step(delta, input_vector, wants_sprint, wants_jump)
 	move_and_slide()
+	_apply_rigid_body_push_impulses()
+	_update_character_rig_animation(delta, wants_sprint)
 
 
 func apply_remote_input_state(
@@ -190,10 +211,25 @@ func apply_movement_step(
 	wants_sprint: bool,
 	wants_jump: bool
 ) -> void:
-	if not is_on_floor():
-		velocity.y -= _gravity * delta
-	elif wants_jump and can_jump():
+	if is_on_floor():
+		_coyote_timer = coyote_time_seconds
+	else:
+		_coyote_timer = maxf(0.0, _coyote_timer - delta)
+
+	if wants_jump:
+		_jump_buffer_timer = jump_buffer_seconds
+	else:
+		_jump_buffer_timer = maxf(0.0, _jump_buffer_timer - delta)
+
+	if _jump_buffer_timer > 0.0 and _coyote_timer > 0.0 and can_jump():
 		velocity.y = jump_velocity
+		_jump_buffer_timer = 0.0
+		_coyote_timer = 0.0
+	elif not is_on_floor():
+		var grav_mult: float = fall_gravity_multiplier if velocity.y < 0.0 else 1.0
+		if velocity.y > 0.0 and is_local_player and not Input.is_action_pressed("jump"):
+			grav_mult = 1.65
+		velocity.y -= _gravity * grav_mult * delta
 
 	var move_direction: Vector3 = compute_world_move_direction(input_vector)
 	last_move_intent_world = move_direction
@@ -219,6 +255,51 @@ func apply_movement_step(
 		var target_yaw: float = atan2(-move_direction.x, -move_direction.z)
 		var turn_rate: float = rotation_speed * (0.55 if is_carrying_heavy_cargo else 1.0)
 		visual_root.rotation.y = lerp_angle(visual_root.rotation.y, target_yaw, clampf(turn_rate * delta, 0.0, 1.0))
+
+
+func apply_knockback_impulse(impulse_vel: Vector3, stun_duration: float = 0.4) -> void:
+	velocity = impulse_vel
+	_stun_timer = maxf(_stun_timer, stun_duration)
+
+
+func _apply_rigid_body_push_impulses() -> void:
+	var horiz_speed: float = Vector2(velocity.x, velocity.z).length()
+	if horiz_speed < 0.25:
+		return
+	for i in range(get_slide_collision_count()):
+		var col: KinematicCollision3D = get_slide_collision(i)
+		if col == null:
+			continue
+		var collider: Object = col.get_collider()
+		if collider is RigidBody3D:
+			var rb: RigidBody3D = collider as RigidBody3D
+			if rb == held_cargo:
+				continue
+			if rb is CargoBody and (rb as CargoBody).current_state != CargoBody.CargoState.FREE:
+				continue
+			var push_dir: Vector3 = -col.get_normal()
+			push_dir.y = 0.0
+			if push_dir.length_squared() > 0.001:
+				push_dir = push_dir.normalized()
+				var impulse_mag: float = clampf(horiz_speed * rigid_body_push_force / maxf(rb.mass, 2.0), 0.2, 6.0)
+				rb.apply_central_impulse(push_dir * impulse_mag)
+
+
+func _update_character_rig_animation(delta: float, wants_sprint: bool) -> void:
+	if character_rig == null:
+		return
+	var strain: float = 0.0
+	if held_cargo != null and held_cargo.carry_controller != null:
+		strain = held_cargo.carry_controller.current_strain_ratio
+	character_rig.update_animation(
+		delta,
+		velocity,
+		is_on_floor(),
+		is_carrying_heavy_cargo or is_holding_any_cargo(),
+		strain,
+		wants_sprint,
+		_stun_timer > 0.0
+	)
 
 
 func compute_world_move_direction(input_vector: Vector2) -> Vector3:

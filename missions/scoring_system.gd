@@ -8,7 +8,8 @@ static func calculate_mission_score(
 	elapsed_seconds: float,
 	target_time_seconds: float = 300.0,
 	major_mistakes_count: int = 0,
-	penalty_per_mistake: int = 15
+	penalty_per_mistake: int = 15,
+	bonus_points: int = 0
 ) -> Dictionary:
 	var safe_max_dur: float = maxf(max_durability, 1.0)
 	var clamped_dur: float = clampf(current_durability, 0.0, safe_max_dur)
@@ -22,11 +23,12 @@ static func calculate_mission_score(
 		overtime_penalty = clampi(int(floor(overtime_seconds / 10.0)) * 2, 0, 30)
 
 	var major_mistake_penalty: int = maxi(0, major_mistakes_count) * maxi(0, penalty_per_mistake)
+	var safe_bonus: int = maxi(0, bonus_points)
 
-	# Deterministic formula from AGENTS.md §7:
-	# score = clamp(100 - damage_penalty - overtime_penalty - major_mistake_penalty, 0, 100)
+	# Deterministic formula from AGENTS.md §7 (with optional style/parcel bonus capped to 100):
+	# score = clamp(100 - damage_penalty - overtime_penalty - major_mistake_penalty + bonus_points, 0, 100)
 	var final_score: int = clampi(
-		100 - damage_penalty - overtime_penalty - major_mistake_penalty,
+		100 - damage_penalty - overtime_penalty - major_mistake_penalty + safe_bonus,
 		0,
 		100
 	)
@@ -39,6 +41,7 @@ static func calculate_mission_score(
 		"overtime_penalty": overtime_penalty,
 		"major_mistake_penalty": major_mistake_penalty,
 		"major_mistakes_count": maxi(0, major_mistakes_count),
+		"bonus_points": safe_bonus,
 		"durability_remaining": clamped_dur,
 		"max_durability": safe_max_dur,
 		"elapsed_seconds": maxf(0.0, elapsed_seconds),
