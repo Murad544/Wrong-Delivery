@@ -35,6 +35,13 @@ func _init() -> void:
 	if sofa == null or zone == null or mission_mgr == null or results_ui == null or p1 == null:
 		failures.append("Missing required Milestone 06 nodes on SofaDeliveryLevel")
 	else:
+		# Verify expanded small-town environment generation & 20 Maple St location
+		var generated_town: Node = level.get_node_or_null("BlockoutGeometry/TownBuilder/GeneratedTown")
+		if generated_town == null or generated_town.get_child_count() < 6:
+			failures.append("TownEnvironmentBuilder should generate small town districts, river bridge, and perimeter hills")
+		if zone.global_position.x < 100.0:
+			failures.append("Expected DeliveryZone at expanded Maple St cul-de-sac (x >= 100), got %s" % str(zone.global_position))
+
 		# Register sofa inside delivery zone overlap list for deterministic validation test
 		zone._on_body_entered(sofa)
 		sofa.global_position = zone.global_position

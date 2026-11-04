@@ -125,21 +125,26 @@ func _update_objective_text() -> void:
 		current_objective_text = "Locate the delivery cargo"
 		return
 
-	# Check if near the customer house at Maple St
-	if target_cargo.global_position.x > 24.0 and target_cargo.global_position.z > 32.0:
+	# Check if near the customer house at 20 Maple St (x >= 76, z <= 58)
+	if target_cargo.global_position.x > 76.0 and target_cargo.global_position.z < 58.0:
 		if target_cargo.current_state in [CargoBody.CargoState.LOADED_UNSECURED, CargoBody.CargoState.SECURED]:
-			current_objective_text = "Step 4/5: Park in the driveway, unstrap (F), and unload the sofa"
+			current_objective_text = "Step 4/5: Park in 20 Maple St driveway, unstrap (F), and unload the sofa"
 		elif delivery_zone != null and delivery_zone.current_zone_status.begins_with("Sofa in zone"):
 			current_objective_text = delivery_zone.current_zone_status
 		else:
-			current_objective_text = "Step 5/5: Rotate the sofa through the front door & hallway onto the green Delivery Zone!"
+			current_objective_text = "Step 5/5: Pivot the sofa through the front door & hallway onto the green Delivery Zone!"
 		return
 
 	match target_cargo.current_state:
-		CargoBody.CargoState.SECURED:
-			current_objective_text = "Step 3/5: Drive down Main Ave, weave past roadwork, cross the hill & turn East to 20 Maple St!"
-		CargoBody.CargoState.LOADED_UNSECURED:
-			current_objective_text = "Step 2/5: Press F at the yellow rear strap anchor to secure the sofa (or risk it sliding!)"
+		CargoBody.CargoState.SECURED, CargoBody.CargoState.LOADED_UNSECURED:
+			if target_cargo.current_state == CargoBody.CargoState.LOADED_UNSECURED and target_cargo.global_position.z < 18.0:
+				current_objective_text = "Step 2/5: Press F at the yellow rear strap anchor to secure the sofa (or risk it sliding!)"
+			elif target_cargo.global_position.x < 18.0 and target_cargo.global_position.z < 92.0:
+				current_objective_text = "Step 3/5: Drive South down Commerce Blvd past the shops & roadwork toward Town Square!"
+			elif target_cargo.global_position.x < 72.0:
+				current_objective_text = "Step 3/5: Turn East at the Town Square fountain and cross the Maple Creek Bridge!"
+			else:
+				current_objective_text = "Step 3/5: Turn North onto Maple Street and follow it to 20 Maple St at the cul-de-sac!"
 		CargoBody.CargoState.CARRIED:
 			current_objective_text = "Step 2/5: Carry the sofa out the warehouse bay and up the truck's rear ramp (E to drop in bed)"
 		_:

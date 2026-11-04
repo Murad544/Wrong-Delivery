@@ -5,3 +5,5 @@ res://cargo/carry_controller.gd
 res://networking/state_sync.gd
 res://player/interaction_controller.gd
 res://player/player_controller.gd
+res://missions/mission_manager.gd
+res://tests/milestone_06_smoke_test.gd

@@ -1,4 +1,4 @@
-[gd_scene load_steps=42 format=3]
+[gd_scene load_steps=32 format=3]
 
 [ext_resource type="Script" path="res://scenes/levels/sofa_delivery_level.gd" id="1_level_script"]
 [ext_resource type="PackedScene" path="res://player/player.tscn" id="2_player_scene"]
@@ -9,6 +9,7 @@
 [ext_resource type="PackedScene" path="res://vehicles/delivery_truck.tscn" id="7_truck_scene"]
 [ext_resource type="Script" path="res://missions/delivery_zone.gd" id="8_delivery_zone_script"]
 [ext_resource type="PackedScene" path="res://ui/results_screen.tscn" id="9_results_scene"]
+[ext_resource type="Script" path="res://scenes/levels/town_environment_builder.gd" id="10_town_builder"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_sky"]
 sky_top_color = Color(0.28, 0.6, 0.96, 1)
@@ -44,37 +45,9 @@ albedo_color = Color(0.26, 0.3, 0.35, 1)
 metallic = 0.35
 roughness = 0.6
 
-[sub_resource type="StandardMaterial3D" id="Mat_road"]
-albedo_color = Color(0.22, 0.24, 0.27, 1)
-roughness = 0.9
-
-[sub_resource type="StandardMaterial3D" id="Mat_sidewalk"]
-albedo_color = Color(0.76, 0.75, 0.72, 1)
-roughness = 0.88
-
-[sub_resource type="StandardMaterial3D" id="Mat_lane_line"]
-albedo_color = Color(0.96, 0.96, 0.92, 1)
-roughness = 0.7
-
 [sub_resource type="StandardMaterial3D" id="Mat_bump"]
 albedo_color = Color(0.96, 0.76, 0.16, 1)
 roughness = 0.65
-
-[sub_resource type="StandardMaterial3D" id="Mat_hazard_orange"]
-albedo_color = Color(0.95, 0.42, 0.14, 1)
-roughness = 0.65
-
-[sub_resource type="StandardMaterial3D" id="Mat_water"]
-albedo_color = Color(0.2, 0.62, 0.88, 1)
-roughness = 0.25
-
-[sub_resource type="StandardMaterial3D" id="Mat_bridge_deck"]
-albedo_color = Color(0.45, 0.44, 0.42, 1)
-roughness = 0.85
-
-[sub_resource type="StandardMaterial3D" id="Mat_bridge_rail"]
-albedo_color = Color(0.84, 0.26, 0.22, 1)
-roughness = 0.6
 
 [sub_resource type="StandardMaterial3D" id="Mat_house_wall"]
 albedo_color = Color(0.95, 0.9, 0.78, 1)
@@ -88,29 +61,13 @@ roughness = 0.75
 albedo_color = Color(0.76, 0.28, 0.24, 1)
 roughness = 0.75
 
-[sub_resource type="StandardMaterial3D" id="Mat_neighbor_bakery"]
-albedo_color = Color(0.94, 0.68, 0.56, 1)
-roughness = 0.8
-
-[sub_resource type="StandardMaterial3D" id="Mat_neighbor_blue"]
-albedo_color = Color(0.54, 0.76, 0.92, 1)
-roughness = 0.8
-
-[sub_resource type="StandardMaterial3D" id="Mat_neighbor_yellow"]
-albedo_color = Color(0.95, 0.84, 0.46, 1)
-roughness = 0.8
-
-[sub_resource type="StandardMaterial3D" id="Mat_neighbor_mint"]
-albedo_color = Color(0.62, 0.86, 0.72, 1)
-roughness = 0.8
-
 [sub_resource type="StandardMaterial3D" id="Mat_wood_brown"]
 albedo_color = Color(0.48, 0.32, 0.18, 1)
 roughness = 0.85
 
-[sub_resource type="StandardMaterial3D" id="Mat_foliage_green"]
-albedo_color = Color(0.26, 0.62, 0.28, 1)
-roughness = 0.85
+[sub_resource type="StandardMaterial3D" id="Mat_lane_line"]
+albedo_color = Color(0.96, 0.96, 0.92, 1)
+roughness = 0.7
 
 [sub_resource type="StandardMaterial3D" id="Mat_delivery_zone"]
 albedo_color = Color(0.18, 0.86, 0.46, 1)
@@ -123,11 +80,11 @@ albedo_color = Color(0.22, 0.68, 0.95, 1)
 roughness = 0.4
 
 [sub_resource type="BoxShape3D" id="Shape_ground"]
-size = Vector3(140, 1, 140)
+size = Vector3(320, 1, 320)
 
 [sub_resource type="BoxMesh" id="Mesh_ground"]
 material = SubResource("Mat_grass")
-size = Vector3(140, 1, 140)
+size = Vector3(320, 1, 320)
 
 [sub_resource type="BoxShape3D" id="Shape_wall_long"]
 size = Vector3(16, 4.2, 0.4)
@@ -163,7 +120,7 @@ script = ExtResource("1_level_script")
 environment = SubResource("Environment_main")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
-transform = Transform3D(0.819152, -0.40558, 0.40558, 0, 0.707107, 0.707107, -0.573576, -0.579228, 0.579228, 0, 24, 0)
+transform = Transform3D(0.819152, -0.40558, 0.40558, 0, 0.707107, 0.707107, -0.573576, -0.579228, 0.579228, 0, 28, 0)
 shadow_enabled = true
 
 [node name="SpawnPoint" type="Marker3D" parent="."]
@@ -177,7 +134,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.5, 0.1, -2.5)
 [node name="ResultsScreen" parent="." instance=ExtResource("9_results_scene")]
 
 [node name="DeliveryZone" type="Area3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 41.2, 1.2, 46.8)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 107.2, 1.2, 46.8)
 script = ExtResource("8_delivery_zone_script")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="DeliveryZone"]
@@ -186,7 +143,7 @@ shape = SubResource("Shape_delivery_zone")
 [node name="BlockoutGeometry" type="Node3D" parent="."]
 
 [node name="GroundBody" type="StaticBody3D" parent="BlockoutGeometry"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18, -0.5, 24)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 45, -0.5, 60)
 collision_layer = 1
 collision_mask = 0
 
@@ -195,6 +152,9 @@ shape = SubResource("Shape_ground")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="BlockoutGeometry/GroundBody"]
 mesh = SubResource("Mesh_ground")
+
+[node name="TownBuilder" type="Node3D" parent="BlockoutGeometry"]
+script = ExtResource("10_town_builder")
 
 [node name="Warehouse" type="Node3D" parent="BlockoutGeometry"]
 
@@ -335,260 +295,8 @@ radius = 0.18
 height = 1.1
 material = SubResource("Mat_bump")
 
-[node name="RoadAndParking" type="Node3D" parent="BlockoutGeometry"]
-
-[node name="LoadingBayApron" type="CSGBox3D" parent="BlockoutGeometry/RoadAndParking"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.01, 10.5)
-use_collision = false
-size = Vector3(12, 0.02, 9)
-material = SubResource("Mat_road")
-
-[node name="ParkingStripeLeft" type="CSGBox3D" parent="BlockoutGeometry/RoadAndParking"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.2, 0.02, 11.5)
-use_collision = false
-size = Vector3(0.18, 0.02, 6.5)
-material = SubResource("Mat_bump")
-
-[node name="ParkingStripeRight" type="CSGBox3D" parent="BlockoutGeometry/RoadAndParking"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.2, 0.02, 11.5)
-use_collision = false
-size = Vector3(0.18, 0.02, 6.5)
-material = SubResource("Mat_bump")
-
-[node name="MainStreetNorthSouth" type="CSGBox3D" parent="BlockoutGeometry/RoadAndParking"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.01, 31.0)
-use_collision = false
-size = Vector3(9.0, 0.02, 34.0)
-material = SubResource("Mat_road")
-
-[node name="MainSidewalkWest" type="CSGBox3D" parent="BlockoutGeometry/RoadAndParking"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.6, 0.015, 31.0)
-use_collision = false
-size = Vector3(2.2, 0.03, 34.0)
-material = SubResource("Mat_sidewalk")
-
-[node name="MainSidewalkEast" type="CSGBox3D" parent="BlockoutGeometry/RoadAndParking"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.6, 0.015, 27.0)
-use_collision = false
-size = Vector3(2.2, 0.03, 26.0)
-material = SubResource("Mat_sidewalk")
-
-[node name="CenterLineDash1" type="CSGBox3D" parent="BlockoutGeometry/RoadAndParking"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 17.0)
-use_collision = false
-size = Vector3(0.2, 0.02, 2.6)
-material = SubResource("Mat_lane_line")
-
-[node name="CenterLineDash2" type="CSGBox3D" parent="BlockoutGeometry/RoadAndParking"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 23.0)
-use_collision = false
-size = Vector3(0.2, 0.02, 2.6)
-material = SubResource("Mat_lane_line")
-
-[node name="CenterLineDash3" type="CSGBox3D" parent="BlockoutGeometry/RoadAndParking"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 29.0)
-use_collision = false
-size = Vector3(0.2, 0.02, 2.6)
-material = SubResource("Mat_lane_line")
-
-[node name="CenterLineDash4" type="CSGBox3D" parent="BlockoutGeometry/RoadAndParking"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, 36.0)
-use_collision = false
-size = Vector3(0.2, 0.02, 2.6)
-material = SubResource("Mat_lane_line")
-
-[node name="SpeedBump" type="CSGCylinder3D" parent="BlockoutGeometry/RoadAndParking"]
-transform = Transform3D(-4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, 0, 1, 0, -0.28, 19.5)
-use_collision = true
-collision_layer = 1
-collision_mask = 0
-radius = 0.38
-height = 8.4
-sides = 20
-material = SubResource("Mat_bump")
-
-[node name="RoadworkBarrierWest" type="CSGBox3D" parent="BlockoutGeometry/RoadAndParking"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.1, 0.55, 26.5)
-use_collision = true
-collision_layer = 1
-collision_mask = 0
-size = Vector3(2.8, 1.1, 0.6)
-material = SubResource("Mat_hazard_orange")
-
-[node name="RoadworkBarrierEast" type="CSGBox3D" parent="BlockoutGeometry/RoadAndParking"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.1, 0.55, 33.0)
-use_collision = true
-collision_layer = 1
-collision_mask = 0
-size = Vector3(2.8, 1.1, 0.6)
-material = SubResource("Mat_hazard_orange")
-
-[node name="MapleStreetEastWest" type="CSGBox3D" parent="BlockoutGeometry/RoadAndParking"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.0, 0.01, 44.0)
-use_collision = false
-size = Vector3(32.0, 0.02, 8.6)
-material = SubResource("Mat_road")
-
-[node name="CanalWaterChannel" type="CSGBox3D" parent="BlockoutGeometry/RoadAndParking"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.0, 0.005, 34.0)
-use_collision = false
-size = Vector3(5.6, 0.01, 44.0)
-material = SubResource("Mat_water")
-
-[node name="BridgeRampWest" type="CSGBox3D" parent="BlockoutGeometry/RoadAndParking"]
-transform = Transform3D(0.990268, -0.139173, 0, 0.139173, 0.990268, 0, 0, 0, 1, 10.0, 0.25, 44.0)
-use_collision = true
-collision_layer = 1
-collision_mask = 0
-size = Vector3(5.4, 0.3, 8.4)
-material = SubResource("Mat_bridge_deck")
-
-[node name="BridgeCrownDeck" type="CSGBox3D" parent="BlockoutGeometry/RoadAndParking"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.0, 0.62, 44.0)
-use_collision = true
-collision_layer = 1
-collision_mask = 0
-size = Vector3(5.2, 0.3, 8.4)
-material = SubResource("Mat_bridge_deck")
-
-[node name="BridgeRampEast" type="CSGBox3D" parent="BlockoutGeometry/RoadAndParking"]
-transform = Transform3D(0.990268, 0.139173, 0, -0.139173, 0.990268, 0, 0, 0, 1, 20.0, 0.25, 44.0)
-use_collision = true
-collision_layer = 1
-collision_mask = 0
-size = Vector3(5.4, 0.3, 8.4)
-material = SubResource("Mat_bridge_deck")
-
-[node name="BridgeRailNorth" type="CSGBox3D" parent="BlockoutGeometry/RoadAndParking"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.0, 1.25, 40.0)
-use_collision = true
-collision_layer = 1
-collision_mask = 0
-size = Vector3(13.0, 1.1, 0.35)
-material = SubResource("Mat_bridge_rail")
-
-[node name="BridgeRailSouth" type="CSGBox3D" parent="BlockoutGeometry/RoadAndParking"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15.0, 1.25, 48.0)
-use_collision = true
-collision_layer = 1
-collision_mask = 0
-size = Vector3(13.0, 1.1, 0.35)
-material = SubResource("Mat_bridge_rail")
-
-[node name="CustomerDrivewayApron" type="CSGBox3D" parent="BlockoutGeometry/RoadAndParking"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 29.0, 0.01, 44.0)
-use_collision = false
-size = Vector3(9.0, 0.02, 12.0)
-material = SubResource("Mat_sidewalk")
-
-[node name="NeighborhoodProps" type="Node3D" parent="BlockoutGeometry"]
-
-[node name="CornerBakeryBuilding" type="CSGBox3D" parent="BlockoutGeometry/NeighborhoodProps"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.5, 2.8, 19.0)
-use_collision = true
-collision_layer = 1
-collision_mask = 0
-size = Vector3(9.0, 5.6, 10.0)
-material = SubResource("Mat_neighbor_bakery")
-
-[node name="CornerBakeryAwning" type="CSGBox3D" parent="BlockoutGeometry/NeighborhoodProps"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.2, 2.8, 19.0)
-use_collision = false
-size = Vector3(1.8, 0.35, 8.4)
-material = SubResource("Mat_roof_red")
-
-[node name="HardwareShopBuilding" type="CSGBox3D" parent="BlockoutGeometry/NeighborhoodProps"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.5, 2.6, 16.0)
-use_collision = true
-collision_layer = 1
-collision_mask = 0
-size = Vector3(8.0, 5.2, 9.0)
-material = SubResource("Mat_neighbor_blue")
-
-[node name="YellowTownhouse" type="CSGBox3D" parent="BlockoutGeometry/NeighborhoodProps"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.5, 3.2, 34.0)
-use_collision = true
-collision_layer = 1
-collision_mask = 0
-size = Vector3(8.5, 6.4, 9.5)
-material = SubResource("Mat_neighbor_yellow")
-
-[node name="MintCottage18Maple" type="CSGBox3D" parent="BlockoutGeometry/NeighborhoodProps"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 26.5, 2.5, 31.0)
-use_collision = true
-collision_layer = 1
-collision_mask = 0
-size = Vector3(9.0, 5.0, 8.0)
-material = SubResource("Mat_neighbor_mint")
-
-[node name="MintCottageRoof" type="CSGBox3D" parent="BlockoutGeometry/NeighborhoodProps"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 26.5, 5.3, 31.0)
-use_collision = false
-size = Vector3(9.8, 0.7, 8.8)
-material = SubResource("Mat_roof_red")
-
-[node name="TreeWest1Trunk" type="CSGCylinder3D" parent="BlockoutGeometry/NeighborhoodProps"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.2, 1.2, 12.0)
-use_collision = true
-collision_layer = 1
-collision_mask = 0
-radius = 0.35
-height = 2.4
-material = SubResource("Mat_wood_brown")
-
-[node name="TreeWest1Canopy" type="CSGSphere3D" parent="BlockoutGeometry/NeighborhoodProps"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.2, 3.4, 12.0)
-use_collision = false
-radius = 1.8
-material = SubResource("Mat_foliage_green")
-
-[node name="TreeWest2Trunk" type="CSGCylinder3D" parent="BlockoutGeometry/NeighborhoodProps"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.2, 1.2, 26.5)
-use_collision = true
-collision_layer = 1
-collision_mask = 0
-radius = 0.35
-height = 2.4
-material = SubResource("Mat_wood_brown")
-
-[node name="TreeWest2Canopy" type="CSGSphere3D" parent="BlockoutGeometry/NeighborhoodProps"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.2, 3.4, 26.5)
-use_collision = false
-radius = 1.9
-material = SubResource("Mat_foliage_green")
-
-[node name="TreeEast1Trunk" type="CSGCylinder3D" parent="BlockoutGeometry/NeighborhoodProps"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.2, 1.2, 25.0)
-use_collision = true
-collision_layer = 1
-collision_mask = 0
-radius = 0.35
-height = 2.4
-material = SubResource("Mat_wood_brown")
-
-[node name="TreeEast1Canopy" type="CSGSphere3D" parent="BlockoutGeometry/NeighborhoodProps"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.2, 3.4, 25.0)
-use_collision = false
-radius = 1.8
-material = SubResource("Mat_foliage_green")
-
-[node name="TreeMapleSouthTrunk" type="CSGCylinder3D" parent="BlockoutGeometry/NeighborhoodProps"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25.0, 1.2, 51.5)
-use_collision = true
-collision_layer = 1
-collision_mask = 0
-radius = 0.35
-height = 2.4
-material = SubResource("Mat_wood_brown")
-
-[node name="TreeMapleSouthCanopy" type="CSGSphere3D" parent="BlockoutGeometry/NeighborhoodProps"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25.0, 3.4, 51.5)
-use_collision = false
-radius = 2.0
-material = SubResource("Mat_foliage_green")
-
 [node name="CustomerHouse" type="Node3D" parent="BlockoutGeometry"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 38.0, 0, 44.0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 104.0, 0, 44.0)
 
 [node name="HouseFloor" type="CSGBox3D" parent="BlockoutGeometry/CustomerHouse"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.01, 0)
@@ -692,7 +400,7 @@ material = SubResource("Mat_lane_line")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.6, 1.25, 0.15)
 script = ExtResource("4_interactable_script")
 prompt_description = "Inspect delivery manifest"
-feedback_message = "Manifest: 1x Oversized Sofa -> 20 Maple St (Cross the canal bridge & turn into driveway)"
+feedback_message = "Manifest: 1x Oversized Sofa -> 20 Maple St (South down Commerce Blvd -> East at Town Square -> North on Maple St)"
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Interactables/ManifestClipboard"]
 shape = SubResource("Shape_interact_sphere")
@@ -715,7 +423,7 @@ size = Vector3(0.35, 0.45, 0.2)
 material = SubResource("Mat_interact_prop")
 
 [node name="HouseDoorbell" type="Area3D" parent="Interactables"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 31.7, 1.3, 42.3)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 97.7, 1.3, 42.3)
 script = ExtResource("4_interactable_script")
 prompt_description = "Ring customer doorbell (20 Maple St)"
 feedback_message = "Ding-dong! Customer: 'Pivot the sofa through the front door and set it on the green rug!'"
@@ -728,7 +436,7 @@ size = Vector3(0.2, 0.35, 0.35)
 material = SubResource("Mat_interact_prop")
 
 [node name="DeliveryTerminal" type="Area3D" parent="Interactables"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 43.4, 1.1, 49.0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 109.4, 1.1, 49.0)
 script = ExtResource("4_interactable_script")
 prompt_description = "Confirm sofa delivery"
 interaction_enabled = false
