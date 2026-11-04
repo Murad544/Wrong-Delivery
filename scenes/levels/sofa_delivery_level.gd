@@ -53,13 +53,14 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey:
 		var key_event: InputEventKey = event as InputEventKey
 		if key_event.pressed and not key_event.echo:
-			if key_event.physical_keycode == KEY_F4:
+			var code: Key = key_event.physical_keycode
+			if code == KEY_4 or code == KEY_F4:
 				if network_manager == null or network_manager.is_host_or_offline():
 					reset_all_cargo()
 				elif game_hud != null:
 					game_hud.show_feedback_message("Only the Host can reset the mission checkpoint", true)
 				get_viewport().set_input_as_handled()
-			elif key_event.physical_keycode == KEY_F5 and not alternate_scene_path.is_empty():
+			elif (code == KEY_5 or code == KEY_F5) and not alternate_scene_path.is_empty():
 				if network_manager != null and network_manager.is_online():
 					network_manager.disconnect_session(false)
 				get_tree().change_scene_to_file(alternate_scene_path)

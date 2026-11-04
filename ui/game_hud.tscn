@@ -51,12 +51,12 @@ text = "WASD: Move/Drive | E: Grab/Drop/Seat | F: Strap Cargo | Space: Jump/Brak
 
 [node name="StatusLabel" type="Label" parent="RootMargin/TopLeftPanel/VBox"]
 layout_mode = 2
-text = "F1: Host LAN | F2: Join LAN | F3: HUD | F4: Reset | F5: Scene | F6: Latency Sim"
+text = "Keys: [1] Host LAN | [2] Join LAN | [3] HUD | [4] Reset | [5] Scene | [6] Latency"
 
 [node name="NetStatusLabel" type="Label" parent="RootMargin/TopLeftPanel/VBox"]
 layout_mode = 2
 modulate = Color(0.68, 0.94, 1, 1)
-text = "Network: Offline (Press F1 to Host LAN, F2 to Join 127.0.0.1)"
+text = "Network: Offline (Press 1 to Host LAN, Press 2 to Join 127.0.0.1)"
 
 [node name="TopRightDebugPanel" type="PanelContainer" parent="RootMargin"]
 layout_mode = 2
@@ -70,7 +70,7 @@ theme_override_constants/separation = 4
 
 [node name="DebugHeaderLabel" type="Label" parent="RootMargin/TopRightDebugPanel/DebugVBox"]
 layout_mode = 2
-text = "Telemetry & Diagnostics (F3)"
+text = "Telemetry & Diagnostics (Key 3)"
 
 [node name="DebugStatsLabel" type="Label" parent="RootMargin/TopRightDebugPanel/DebugVBox"]
 layout_mode = 2

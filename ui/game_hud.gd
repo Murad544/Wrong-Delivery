@@ -10,7 +10,7 @@ var _tracked_cargos: Array[CargoBody] = []
 var _tracked_truck: TruckController = null
 var _network_manager: NetworkManager = null
 var _state_sync: StateSync = null
-var _net_status_detail: String = "Offline (F1: Host LAN | F2: Join 127.0.0.1)"
+var _net_status_detail: String = "Offline (Press 1: Host LAN | Press 2: Join 127.0.0.1)"
 
 @onready var prompt_panel: PanelContainer = $RootMargin/CenterBottom/PromptPanel
 @onready var prompt_label: Label = $RootMargin/CenterBottom/PromptPanel/PromptLabel
@@ -34,17 +34,18 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey:
 		var key_event: InputEventKey = event as InputEventKey
 		if key_event.pressed and not key_event.echo:
-			if key_event.physical_keycode == KEY_F3:
+			var code: Key = key_event.physical_keycode
+			if code == KEY_3 or code == KEY_F3:
 				if debug_panel != null:
 					debug_panel.visible = not debug_panel.visible
 				get_viewport().set_input_as_handled()
-			elif key_event.physical_keycode == KEY_F1 and _network_manager != null:
+			elif (code == KEY_1 or code == KEY_F1) and _network_manager != null:
 				_network_manager.host_lan_game()
 				get_viewport().set_input_as_handled()
-			elif key_event.physical_keycode == KEY_F2 and _network_manager != null:
+			elif (code == KEY_2 or code == KEY_F2) and _network_manager != null:
 				_network_manager.join_lan_game("127.0.0.1")
 				get_viewport().set_input_as_handled()
-			elif key_event.physical_keycode == KEY_F6 and _state_sync != null:
+			elif (code == KEY_6 or code == KEY_F6) and _state_sync != null:
 				var sim_msg: String = _state_sync.cycle_simulated_latency()
 				show_feedback_message(sim_msg, false)
 				get_viewport().set_input_as_handled()
@@ -148,9 +149,9 @@ func _on_mouse_capture_changed(is_captured: bool) -> void:
 	if status_label == null:
 		return
 	if is_captured:
-		status_label.text = "F1: Host LAN | F2: Join LAN | F3: HUD | F4: Reset | F5: Scene | F6: Latency Sim"
+		status_label.text = "Keys: [1] Host LAN | [2] Join LAN | [3] HUD | [4] Reset | [5] Scene | [6] Latency"
 	else:
-		status_label.text = "Mouse Released (Click or Esc to capture) | F1: Host | F2: Join"
+		status_label.text = "Mouse Released (Click or Esc) | [1] Host LAN | [2] Join LAN"
 
 
 func _update_net_status_label() -> void:
@@ -175,7 +176,7 @@ func _refresh_diagnostics_text() -> void:
 			my_pid,
 			str(_network_manager.connected_peers)
 		])
-		lines.append("Sim Latency (F6): %.0f ms" % sim_ms)
+		lines.append("Sim Latency (Key 6): %.0f ms" % sim_ms)
 		lines.append("")
 
 	var focus_cargo: CargoBody = _select_focus_cargo()

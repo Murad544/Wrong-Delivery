@@ -313,9 +313,9 @@ func rpc_request_interaction(
 func process_host_interaction_request(
 	sender_id: int,
 	action_kind: String,
-	int_arg_a: int,
-	int_arg_b: int,
-	str_arg: String
+	int_arg_a: int = 0,
+	int_arg_b: int = 0,
+	str_arg: String = ""
 ) -> Dictionary:
 	if player_spawner == null or cargo_manager == null:
 		return {"success": false, "message": "Server not ready"}

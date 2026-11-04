@@ -29,12 +29,12 @@ func _init() -> void:
 
 		# 2. Verify host rejects out-of-range grab request from Peer 2
 		peer2_player.global_position = crate.global_position + Vector3(0.0, 0.0, 12.0)
-		await process_frame
 		var far_res: Dictionary = sync_node.process_host_interaction_request(
 			2,
 			"cargo_handle",
 			crate.cargo_net_id,
-			0
+			0,
+			""
 		)
 		if bool(far_res.get("success", true)) or crate.get_carrier_count() != 0:
 			failures.append("Host must reject out-of-range cargo grab request from client")
@@ -46,7 +46,8 @@ func _init() -> void:
 			2,
 			"cargo_handle",
 			crate.cargo_net_id,
-			0
+			0,
+			""
 		)
 		if not bool(valid_res.get("success", false)) or peer2_player.held_cargo != crate:
 			failures.append("Host should accept valid in-range grab from Peer 2 (got: %s)" % str(valid_res))
@@ -59,7 +60,8 @@ func _init() -> void:
 			1,
 			"cargo_handle",
 			crate.cargo_net_id,
-			0
+			0,
+			""
 		)
 		if bool(conflict_res.get("success", true)) or peer1_player.is_holding_any_cargo():
 			failures.append("Host must reject second player grabbing an already occupied handle")
