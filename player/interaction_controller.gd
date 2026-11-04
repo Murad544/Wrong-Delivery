@@ -49,7 +49,17 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func try_interact() -> bool:
+	var is_client_mode: bool = (
+		player_body != null
+		and player_body.has_method("is_host_simulation")
+		and not bool(player_body.call("is_host_simulation"))
+	)
+	var state_sync: StateSync = _find_state_sync() if is_client_mode else null
+
 	if player_body != null and player_body.has_method("is_seated_in_vehicle") and bool(player_body.call("is_seated_in_vehicle")):
+		if state_sync != null:
+			state_sync.request_client_interaction("exit_vehicle")
+			return true
 		var exit_res: Dictionary = player_body.call("try_exit_seated_vehicle")
 		var ok: bool = bool(exit_res.get("success", false))
 		var msg: String = String(exit_res.get("message", ""))
@@ -58,6 +68,9 @@ func try_interact() -> bool:
 		return true
 
 	if player_body != null and player_body.has_method("is_holding_any_cargo") and bool(player_body.call("is_holding_any_cargo")):
+		if state_sync != null:
+			state_sync.request_client_interaction("release_cargo")
+			return true
 		var release_msg: String = String(player_body.call("release_held_cargo"))
 		interaction_feedback.emit(release_msg, false)
 		_update_best_target(true)
@@ -78,6 +91,10 @@ func try_interact() -> bool:
 		interaction_feedback.emit("Blocked by obstacle", true)
 		return true
 
+	if state_sync != null:
+		_dispatch_client_target_request(state_sync, _current_target)
+		return true
+
 	var message: String = _current_target.perform_interaction(actor)
 	interaction_feedback.emit(message, false)
 	_update_best_target(true)
@@ -85,6 +102,13 @@ func try_interact() -> bool:
 
 
 func try_secure_cargo_action() -> bool:
+	var is_client_mode: bool = (
+		player_body != null
+		and player_body.has_method("is_host_simulation")
+		and not bool(player_body.call("is_host_simulation"))
+	)
+	var state_sync: StateSync = _find_state_sync() if is_client_mode else null
+
 	if player_body != null and player_body.has_method("is_seated_in_vehicle") and bool(player_body.call("is_seated_in_vehicle")):
 		interaction_feedback.emit("Exit the truck cab to strap cargo at the rear bay", true)
 		return true
@@ -113,10 +137,33 @@ func try_secure_cargo_action() -> bool:
 		interaction_feedback.emit(String(check.get("reason", "Cannot secure cargo")), true)
 		return true
 
+	if state_sync != null:
+		state_sync.request_client_interaction("truck_role", 0, 0, "CargoAnchor")
+		return true
+
 	var msg: String = anchor_target.perform_interaction(actor)
 	interaction_feedback.emit(msg, false)
 	_update_best_target(true)
 	return true
+
+
+func _find_state_sync() -> StateSync:
+	if get_tree() == null or get_tree().current_scene == null:
+		return null
+	return get_tree().current_scene.get_node_or_null("StateSync") as StateSync
+
+
+func _dispatch_client_target_request(state_sync: StateSync, target: InteractableTarget) -> void:
+	if target is CargoHandle:
+		var handle: CargoHandle = target as CargoHandle
+		var cargo: CargoBody = handle.cargo_owner as CargoBody
+		if cargo != null:
+			state_sync.request_client_interaction("cargo_handle", cargo.cargo_net_id, handle.handle_id)
+	elif target is TruckInteractable:
+		var ti: TruckInteractable = target as TruckInteractable
+		state_sync.request_client_interaction("truck_role", 0, 0, ti.role)
+	else:
+		state_sync.request_client_interaction("level_prop", 0, 0, String(target.get_path()))
 
 
 func get_current_target() -> InteractableTarget:

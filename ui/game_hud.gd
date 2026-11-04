@@ -8,11 +8,15 @@ var _feedback_timer: float = 0.0
 var _tracked_player: PlayerController = null
 var _tracked_cargos: Array[CargoBody] = []
 var _tracked_truck: TruckController = null
+var _network_manager: NetworkManager = null
+var _state_sync: StateSync = null
+var _net_status_detail: String = "Offline (F1: Host LAN | F2: Join 127.0.0.1)"
 
 @onready var prompt_panel: PanelContainer = $RootMargin/CenterBottom/PromptPanel
 @onready var prompt_label: Label = $RootMargin/CenterBottom/PromptPanel/PromptLabel
 @onready var feedback_label: Label = $RootMargin/CenterBottom/FeedbackLabel
 @onready var status_label: Label = $RootMargin/TopLeftPanel/VBox/StatusLabel
+@onready var net_status_label: Label = get_node_or_null("RootMargin/TopLeftPanel/VBox/NetStatusLabel") as Label
 @onready var debug_panel: PanelContainer = $RootMargin/TopRightDebugPanel
 @onready var debug_label: Label = $RootMargin/TopRightDebugPanel/DebugVBox/DebugStatsLabel
 
@@ -23,15 +27,27 @@ func _ready() -> void:
 		feedback_label.visible = false
 	if debug_panel != null:
 		debug_panel.visible = show_diagnostics_by_default
+	_update_net_status_label()
 
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey:
 		var key_event: InputEventKey = event as InputEventKey
-		if key_event.pressed and not key_event.echo and key_event.physical_keycode == KEY_F3:
-			if debug_panel != null:
-				debug_panel.visible = not debug_panel.visible
-			get_viewport().set_input_as_handled()
+		if key_event.pressed and not key_event.echo:
+			if key_event.physical_keycode == KEY_F3:
+				if debug_panel != null:
+					debug_panel.visible = not debug_panel.visible
+				get_viewport().set_input_as_handled()
+			elif key_event.physical_keycode == KEY_F1 and _network_manager != null:
+				_network_manager.host_lan_game()
+				get_viewport().set_input_as_handled()
+			elif key_event.physical_keycode == KEY_F2 and _network_manager != null:
+				_network_manager.join_lan_game("127.0.0.1")
+				get_viewport().set_input_as_handled()
+			elif key_event.physical_keycode == KEY_F6 and _state_sync != null:
+				var sim_msg: String = _state_sync.cycle_simulated_latency()
+				show_feedback_message(sim_msg, false)
+				get_viewport().set_input_as_handled()
 
 
 func _process(delta: float) -> void:
@@ -49,10 +65,25 @@ func bind_to_player(player: PlayerController) -> void:
 	if player == null:
 		return
 	if player.interaction_controller != null:
-		player.interaction_controller.prompt_changed.connect(set_interaction_prompt)
-		player.interaction_controller.interaction_feedback.connect(show_feedback_message)
+		if not player.interaction_controller.prompt_changed.is_connected(set_interaction_prompt):
+			player.interaction_controller.prompt_changed.connect(set_interaction_prompt)
+		if not player.interaction_controller.interaction_feedback.is_connected(show_feedback_message):
+			player.interaction_controller.interaction_feedback.connect(show_feedback_message)
 	if player.player_camera != null:
-		player.player_camera.mouse_capture_changed.connect(_on_mouse_capture_changed)
+		if not player.player_camera.mouse_capture_changed.is_connected(_on_mouse_capture_changed):
+			player.player_camera.mouse_capture_changed.connect(_on_mouse_capture_changed)
+
+
+func bind_networking(net_mgr: NetworkManager, sync_node: StateSync) -> void:
+	_network_manager = net_mgr
+	_state_sync = sync_node
+	if _network_manager != null:
+		_network_manager.session_changed.connect(
+			func(_mode: String, detail: String) -> void:
+				_net_status_detail = detail
+				_update_net_status_label()
+		)
+		_network_manager.network_feedback.connect(show_feedback_message)
 
 
 func register_cargo(cargo: CargoBody) -> void:
@@ -117,9 +148,14 @@ func _on_mouse_capture_changed(is_captured: bool) -> void:
 	if status_label == null:
 		return
 	if is_captured:
-		status_label.text = "Mouse: Captured (Esc) | F3: HUD | F4: Reset All | F5: Switch Scene"
+		status_label.text = "F1: Host LAN | F2: Join LAN | F3: HUD | F4: Reset | F5: Scene | F6: Latency Sim"
 	else:
-		status_label.text = "Mouse: Released (Click or Esc to capture)"
+		status_label.text = "Mouse Released (Click or Esc to capture) | F1: Host | F2: Join"
+
+
+func _update_net_status_label() -> void:
+	if net_status_label != null:
+		net_status_label.text = "Network: %s" % _net_status_detail
 
 
 func _refresh_diagnostics_text() -> void:
@@ -127,6 +163,20 @@ func _refresh_diagnostics_text() -> void:
 		return
 
 	var lines: Array[String] = []
+
+	if _network_manager != null:
+		var my_pid: int = 1
+		if _network_manager.is_online():
+			my_pid = multiplayer.get_unique_id()
+		var sim_ms: float = _state_sync.simulated_latency_ms if _state_sync != null else 0.0
+		lines.append("[Multiplayer]")
+		lines.append("Mode: %s | My Peer ID: %d | Peers: %s" % [
+			_network_manager.session_mode,
+			my_pid,
+			str(_network_manager.connected_peers)
+		])
+		lines.append("Sim Latency (F6): %.0f ms" % sim_ms)
+		lines.append("")
 
 	var focus_cargo: CargoBody = _select_focus_cargo()
 	if focus_cargo != null:

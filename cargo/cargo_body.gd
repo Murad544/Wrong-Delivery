@@ -16,6 +16,7 @@ signal carrier_status_changed(cargo: CargoBody, carrier_count: int, required_car
 
 @export var cargo_data: CargoData = null
 
+var cargo_net_id: int = 0
 var current_state: CargoState = CargoState.FREE
 var current_cargo_bay: Node3D = null
 var _spawn_transform: Transform3D = Transform3D.IDENTITY
@@ -23,6 +24,11 @@ var _prev_linear_velocity: Vector3 = Vector3.ZERO
 var _spawn_grace_timer: float = 0.35
 var _damage_flash_timer: float = 0.0
 var _handles: Array[CargoHandle] = []
+
+var _has_net_snapshot: bool = false
+var _interp_target_pos: Vector3 = Vector3.ZERO
+var _interp_target_quat: Quaternion = Quaternion.IDENTITY
+var _client_carrier_count: int = 0
 
 @onready var cargo_damage: CargoDamage = $CargoDamage
 @onready var carry_controller: CarryController = $CarryController
@@ -55,6 +61,14 @@ func _ready() -> void:
 		carry_controller.carrier_detached.connect(_on_carrier_detached)
 
 
+func is_host_simulation() -> bool:
+	if multiplayer == null or multiplayer.multiplayer_peer == null:
+		return true
+	if multiplayer.multiplayer_peer.get_connection_status() != MultiplayerPeer.CONNECTION_CONNECTED:
+		return true
+	return multiplayer.is_server()
+
+
 func _physics_process(delta: float) -> void:
 	if _spawn_grace_timer > 0.0:
 		_spawn_grace_timer = maxf(0.0, _spawn_grace_timer - delta)
@@ -64,11 +78,62 @@ func _physics_process(delta: float) -> void:
 		if _damage_flash_timer <= 0.0:
 			_set_visual_flash(false)
 
+	if not is_host_simulation():
+		freeze = true
+		_interpolate_client_state(delta)
+		return
+
 	if current_state == CargoState.CARRIED and carry_controller != null:
 		carry_controller.process_carry_physics(delta)
 
 	_evaluate_collision_impacts()
 	_prev_linear_velocity = linear_velocity
+
+
+func apply_authoritative_snapshot(
+	auth_pos: Vector3,
+	auth_rot_euler: Vector3,
+	auth_lin_vel: Vector3,
+	auth_state_int: int,
+	auth_durability: float,
+	auth_carriers: int
+) -> void:
+	_interp_target_pos = auth_pos
+	_interp_target_quat = Quaternion.from_euler(auth_rot_euler)
+	linear_velocity = auth_lin_vel
+	_client_carrier_count = auth_carriers
+
+	var new_state: CargoState = auth_state_int as CargoState
+	if new_state != current_state:
+		var old_state: CargoState = current_state
+		current_state = new_state
+		state_changed.emit(old_state, current_state)
+
+	if cargo_damage != null:
+		if auth_durability < cargo_damage.current_durability - 0.5:
+			var diff: float = cargo_damage.current_durability - auth_durability
+			cargo_damage.current_durability = auth_durability
+			_on_damage_taken(diff, auth_durability, cargo_damage.max_durability, auth_lin_vel.length())
+		else:
+			cargo_damage.current_durability = auth_durability
+
+	if not _has_net_snapshot:
+		_has_net_snapshot = true
+		global_position = auth_pos
+		global_rotation = auth_rot_euler
+
+
+func _interpolate_client_state(delta: float) -> void:
+	if not _has_net_snapshot:
+		return
+	if global_position.distance_to(_interp_target_pos) > 4.5:
+		global_position = _interp_target_pos
+	else:
+		global_position = global_position.lerp(_interp_target_pos, clampf(16.0 * delta, 0.0, 1.0))
+
+	var cur_q: Quaternion = global_transform.basis.get_rotation_quaternion()
+	var next_q: Quaternion = cur_q.slerp(_interp_target_quat, clampf(16.0 * delta, 0.0, 1.0))
+	global_transform.basis = Basis(next_q)
 
 
 func get_display_name() -> String:
@@ -84,6 +149,8 @@ func get_required_carriers() -> int:
 
 
 func get_carrier_count() -> int:
+	if not is_host_simulation():
+		return _client_carrier_count
 	if carry_controller != null:
 		return carry_controller.get_carrier_count()
 	return 0

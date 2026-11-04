@@ -16,13 +16,30 @@ extends CharacterBody3D
 @export_group("State")
 @export var is_carrying_heavy_cargo: bool = false
 
+var peer_id: int = 1
+var is_local_player: bool = true
 var held_cargo: CargoBody = null
 var seated_vehicle: TruckController = null
 var seated_role: String = ""
+
+# Host-side network input state for remote peers
+var net_input_vector: Vector2 = Vector2.ZERO
+var net_wants_sprint: bool = false
+var net_wants_jump: bool = false
+var net_cam_yaw_deg: float = 0.0
+var net_rotate_dir: float = 0.0
+
+# Client-side interpolation targets
+var _has_net_snapshot: bool = false
+var _interp_target_pos: Vector3 = Vector3.ZERO
+var _interp_target_vel: Vector3 = Vector3.ZERO
+var _interp_target_visual_yaw: float = 0.0
+
 var _gravity: float = float(ProjectSettings.get_setting("physics/3d/default_gravity", 9.8))
 
 @onready var collision_shape: CollisionShape3D = $CollisionShape3D
 @onready var visual_root: Node3D = $VisualRoot
+@onready var body_mesh: MeshInstance3D = get_node_or_null("VisualRoot/BodyMesh") as MeshInstance3D
 @onready var player_camera: PlayerCamera = $PlayerCamera
 @onready var interaction_controller: InteractionController = $InteractionController
 
@@ -30,31 +47,140 @@ var _gravity: float = float(ProjectSettings.get_setting("physics/3d/default_grav
 func _ready() -> void:
 	_ensure_input_actions()
 	rotation = Vector3.ZERO
+	_interp_target_pos = global_position
 	collision_mask = 1 | 8 | 16 # Collide with Environment (1), Cargo (8), and Vehicle (16)
 	if interaction_controller != null:
 		interaction_controller.setup(self, player_camera)
 
 
+func configure_network_role(assigned_peer_id: int, local_controlled: bool) -> void:
+	peer_id = assigned_peer_id
+	is_local_player = local_controlled
+	apply_player_color_for_peer(peer_id)
+
+	if player_camera != null:
+		player_camera.set_process(is_local_player)
+		player_camera.set_process_unhandled_input(is_local_player)
+		if player_camera.camera != null:
+			player_camera.camera.current = is_local_player
+
+	if interaction_controller != null:
+		interaction_controller.set_physics_process(is_local_player)
+		interaction_controller.set_process_unhandled_input(is_local_player)
+
+
+func apply_player_color_for_peer(id: int) -> void:
+	if body_mesh == null:
+		return
+	var mat: StandardMaterial3D = StandardMaterial3D.new()
+	mat.roughness = 0.7
+	if id == 1:
+		mat.albedo_color = Color(0.95, 0.48, 0.16, 1.0) # Host: Delivery Orange
+	elif id % 2 == 0:
+		mat.albedo_color = Color(0.18, 0.62, 0.92, 1.0) # Client 2: Cobalt / Sky Blue
+	else:
+		mat.albedo_color = Color(0.28, 0.82, 0.46, 1.0) # Client 3+: Emerald Green
+	body_mesh.material_override = mat
+
+
+func is_host_simulation() -> bool:
+	if multiplayer == null or multiplayer.multiplayer_peer == null:
+		return true
+	if multiplayer.multiplayer_peer.get_connection_status() != MultiplayerPeer.CONNECTION_CONNECTED:
+		return true
+	return multiplayer.is_server()
+
+
 func _physics_process(delta: float) -> void:
-	# Keep root rotation strictly zero so child nodes never inherit unexpected yaw/pitch/roll
 	if rotation != Vector3.ZERO:
 		rotation = Vector3.ZERO
+
+	if not is_host_simulation():
+		_interpolate_client_state(delta)
+		return
 
 	if is_seated_in_vehicle():
 		velocity = Vector3.ZERO
 		return
 
-	var input_vector: Vector2 = Input.get_vector(
-		"move_left",
-		"move_right",
-		"move_forward",
-		"move_back"
-	)
-	var wants_sprint: bool = Input.is_action_pressed("sprint")
-	var wants_jump: bool = Input.is_action_just_pressed("jump")
+	var input_vector: Vector2 = Vector2.ZERO
+	var wants_sprint: bool = false
+	var wants_jump: bool = false
+
+	if is_local_player:
+		input_vector = Input.get_vector(
+			"move_left",
+			"move_right",
+			"move_forward",
+			"move_back"
+		)
+		wants_sprint = Input.is_action_pressed("sprint")
+		wants_jump = Input.is_action_just_pressed("jump")
+		if player_camera != null:
+			net_cam_yaw_deg = player_camera._yaw_degrees
+		net_rotate_dir = 0.0
+		if Input.is_action_pressed("rotate_left"):
+			net_rotate_dir += 1.0
+		if Input.is_action_pressed("rotate_right"):
+			net_rotate_dir -= 1.0
+	else:
+		input_vector = net_input_vector
+		wants_sprint = net_wants_sprint
+		wants_jump = net_wants_jump
+		net_wants_jump = false # Consume one-shot jump intent
 
 	apply_movement_step(delta, input_vector, wants_sprint, wants_jump)
 	move_and_slide()
+
+
+func apply_remote_input_state(
+	move_vec: Vector2,
+	wants_sprint: bool,
+	wants_jump: bool,
+	cam_yaw_deg: float,
+	rotate_dir: float
+) -> void:
+	net_input_vector = move_vec.limit_length(1.0)
+	net_wants_sprint = wants_sprint
+	if wants_jump:
+		net_wants_jump = true
+	net_cam_yaw_deg = cam_yaw_deg
+	net_rotate_dir = clampf(rotate_dir, -1.0, 1.0)
+
+
+func apply_authoritative_snapshot(
+	auth_pos: Vector3,
+	auth_vel: Vector3,
+	auth_visual_yaw: float,
+	carrying_flag: bool
+) -> void:
+	_interp_target_pos = auth_pos
+	_interp_target_vel = auth_vel
+	_interp_target_visual_yaw = auth_visual_yaw
+	is_carrying_heavy_cargo = carrying_flag
+	if not _has_net_snapshot:
+		_has_net_snapshot = true
+		global_position = auth_pos
+		if visual_root != null:
+			visual_root.rotation.y = auth_visual_yaw
+
+
+func _interpolate_client_state(delta: float) -> void:
+	if not _has_net_snapshot:
+		return
+	if is_seated_in_vehicle():
+		return
+
+	var dist: float = global_position.distance_to(_interp_target_pos)
+	if dist > 4.0:
+		global_position = _interp_target_pos
+	else:
+		var interp_rate: float = 18.0 if is_local_player else 15.0
+		global_position = global_position.lerp(_interp_target_pos, clampf(interp_rate * delta, 0.0, 1.0))
+
+	velocity = _interp_target_vel
+	if visual_root != null:
+		visual_root.rotation.y = lerp_angle(visual_root.rotation.y, _interp_target_visual_yaw, clampf(15.0 * delta, 0.0, 1.0))
 
 
 func apply_movement_step(
@@ -91,8 +217,8 @@ func apply_movement_step(
 func compute_world_move_direction(input_vector: Vector2) -> Vector3:
 	if input_vector.length_squared() <= 0.0001:
 		return Vector3.ZERO
-	var basis_transform: Basis = global_transform.basis
-	if player_camera != null:
+	var basis_transform: Basis = Basis(Vector3.UP, deg_to_rad(net_cam_yaw_deg))
+	if is_local_player and player_camera != null:
 		basis_transform = player_camera.get_horizontal_basis()
 	var direction: Vector3 = (basis_transform * Vector3(input_vector.x, 0.0, input_vector.y))
 	direction.y = 0.0
@@ -126,7 +252,7 @@ func on_entered_vehicle(vehicle: TruckController, role: String) -> void:
 		collision_shape.disabled = true
 	if visual_root != null:
 		visual_root.visible = false
-	if player_camera != null:
+	if is_local_player and player_camera != null:
 		player_camera.set_vehicle_camera_mode(true, vehicle)
 
 
@@ -136,12 +262,13 @@ func on_exited_vehicle(vehicle: TruckController, exit_world_pos: Vector3) -> voi
 	seated_role = ""
 	velocity = Vector3.ZERO
 	global_transform = Transform3D(Basis.IDENTITY, exit_world_pos)
+	_interp_target_pos = exit_world_pos
 	if visual_root != null:
 		visual_root.visible = true
 		visual_root.rotation = Vector3(0.0, exit_yaw, 0.0)
 	if collision_shape != null:
 		collision_shape.disabled = false
-	if player_camera != null:
+	if is_local_player and player_camera != null:
 		player_camera.set_vehicle_camera_mode(false, null)
 		player_camera.align_yaw_to_world_angle(exit_yaw)
 
@@ -178,12 +305,11 @@ func release_held_cargo() -> String:
 
 
 func get_carry_forward_direction() -> Vector3:
-	if player_camera != null:
+	if is_local_player and player_camera != null:
 		var cam_basis: Basis = player_camera.get_horizontal_basis()
 		return (-cam_basis.z).normalized()
-	if visual_root != null:
-		return (-visual_root.global_transform.basis.z).normalized()
-	return (-global_transform.basis.z).normalized()
+	var net_basis: Basis = Basis(Vector3.UP, deg_to_rad(net_cam_yaw_deg))
+	return (-net_basis.z).normalized()
 
 
 func _choose_acceleration_rate(move_direction: Vector3, on_floor: bool) -> float:

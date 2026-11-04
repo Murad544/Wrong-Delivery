@@ -144,14 +144,21 @@ func process_carry_physics(delta: float) -> void:
 	if not has_any_carrier():
 		return
 
-	# Check local rotation inputs (Q / R)
+	# Check rotation inputs (Q / R) from all attached carriers (local or remote)
 	var rot_dir: float = 0.0
-	if Input.is_action_pressed("rotate_left"):
-		rot_dir += 1.0
-	if Input.is_action_pressed("rotate_right"):
-		rot_dir -= 1.0
+	for handle_id: int in _carriers_by_handle.keys():
+		var actor: Node3D = _carriers_by_handle[handle_id]
+		if actor == null or not is_instance_valid(actor):
+			continue
+		if bool(actor.get("is_local_player")):
+			if Input.is_action_pressed("rotate_left"):
+				rot_dir += 1.0
+			if Input.is_action_pressed("rotate_right"):
+				rot_dir -= 1.0
+		else:
+			rot_dir += float(actor.get("net_rotate_dir"))
 	if absf(rot_dir) > 0.01:
-		apply_rotation_input(rot_dir, delta)
+		apply_rotation_input(clampf(rot_dir, -1.0, 1.0), delta)
 
 	var target_pos: Vector3 = compute_target_world_position()
 	var pos_error: Vector3 = target_pos - cargo_body.global_position

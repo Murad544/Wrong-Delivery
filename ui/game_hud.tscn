@@ -43,7 +43,7 @@ theme_override_constants/separation = 4
 
 [node name="TitleLabel" type="Label" parent="RootMargin/TopLeftPanel/VBox"]
 layout_mode = 2
-text = "Wrong Delivery — Milestone 03 Truck & Cargo Bay"
+text = "Wrong Delivery — Milestone 04 LAN Multiplayer"
 
 [node name="ControlsLabel" type="Label" parent="RootMargin/TopLeftPanel/VBox"]
 layout_mode = 2
@@ -51,7 +51,12 @@ text = "WASD: Move/Drive | E: Grab/Drop/Seat | F: Strap Cargo | Space: Jump/Brak
 
 [node name="StatusLabel" type="Label" parent="RootMargin/TopLeftPanel/VBox"]
 layout_mode = 2
-text = "Mouse: Captured (Esc) | F3: Diagnostics | F4: Reset Cargo | F5: Switch Scene"
+text = "F1: Host LAN | F2: Join LAN | F3: HUD | F4: Reset | F5: Scene | F6: Latency Sim"
+
+[node name="NetStatusLabel" type="Label" parent="RootMargin/TopLeftPanel/VBox"]
+layout_mode = 2
+modulate = Color(0.68, 0.94, 1, 1)
+text = "Network: Offline (Press F1 to Host LAN, F2 to Join 127.0.0.1)"
 
 [node name="TopRightDebugPanel" type="PanelContainer" parent="RootMargin"]
 layout_mode = 2
@@ -65,7 +70,7 @@ theme_override_constants/separation = 4
 
 [node name="DebugHeaderLabel" type="Label" parent="RootMargin/TopRightDebugPanel/DebugVBox"]
 layout_mode = 2
-text = "Cargo Physics Diagnostics (F3)"
+text = "Telemetry & Diagnostics (F3)"
 
 [node name="DebugStatsLabel" type="Label" parent="RootMargin/TopRightDebugPanel/DebugVBox"]
 layout_mode = 2

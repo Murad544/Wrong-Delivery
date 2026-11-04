@@ -7,3 +7,4 @@ res://player/player_camera.gd
 res://tests/milestone_03_smoke_test.gd
 res://vehicles/truck_controller.gd
 res://vehicles/cargo_bay.gd
+res://cargo/carry_controller.gd

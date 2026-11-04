@@ -26,6 +26,14 @@ var is_handbrake_active: bool = false
 var driver_actor: Node3D = null
 var passenger_actor: Node3D = null
 
+var _net_driver_throttle: float = 0.0
+var _net_driver_steer: float = 0.0
+var _net_driver_handbrake: bool = false
+
+var _has_net_snapshot: bool = false
+var _interp_target_pos: Vector3 = Vector3.ZERO
+var _interp_target_yaw: float = 0.0
+
 var _spawn_transform: Transform3D = Transform3D.IDENTITY
 var _gravity: float = float(ProjectSettings.get_setting("physics/3d/default_gravity", 9.8))
 var _horiz_velocity: Vector3 = Vector3.ZERO
@@ -72,15 +80,34 @@ func _ready() -> void:
 				ti.truck_owner = self
 
 
+func is_host_simulation() -> bool:
+	if multiplayer == null or multiplayer.multiplayer_peer == null:
+		return true
+	if multiplayer.multiplayer_peer.get_connection_status() != MultiplayerPeer.CONNECTION_CONNECTED:
+		return true
+	return multiplayer.is_server()
+
+
 func _physics_process(delta: float) -> void:
+	if not is_host_simulation():
+		_interpolate_client_state(delta)
+		_sync_seated_occupants()
+		_update_visual_feedback(delta)
+		return
+
 	var throttle_input: float = 0.0
 	var steer_input: float = 0.0
 	var handbrake_input: bool = false
 
 	if driver_actor != null and is_instance_valid(driver_actor):
-		throttle_input = Input.get_axis("move_back", "move_forward")
-		steer_input = Input.get_axis("move_right", "move_left")
-		handbrake_input = Input.is_action_pressed("handbrake")
+		if bool(driver_actor.get("is_local_player")):
+			throttle_input = Input.get_axis("move_back", "move_forward")
+			steer_input = Input.get_axis("move_right", "move_left")
+			handbrake_input = Input.is_action_pressed("handbrake")
+		else:
+			throttle_input = _net_driver_throttle
+			steer_input = _net_driver_steer
+			handbrake_input = _net_driver_handbrake
 	else:
 		# Parked when no driver is in the cab
 		handbrake_input = true
@@ -341,6 +368,64 @@ func try_exit_vehicle(actor: Node3D) -> Dictionary:
 
 	occupant_changed.emit(driver_actor, passenger_actor)
 	return {"success": true, "message": "Exited delivery truck"}
+
+
+func force_remove_occupant(actor: Node3D) -> void:
+	if actor == null:
+		return
+	if actor == driver_actor:
+		driver_actor = null
+		_net_driver_throttle = 0.0
+		_net_driver_steer = 0.0
+		_net_driver_handbrake = true
+	if actor == passenger_actor:
+		passenger_actor = null
+	occupant_changed.emit(driver_actor, passenger_actor)
+
+
+func apply_remote_driver_input(throttle: float, steer: float, handbrake: bool) -> void:
+	_net_driver_throttle = clampf(throttle, -1.0, 1.0)
+	_net_driver_steer = clampf(steer, -1.0, 1.0)
+	_net_driver_handbrake = handbrake
+
+
+func apply_authoritative_snapshot(
+	auth_pos: Vector3,
+	auth_yaw: float,
+	auth_fwd_speed: float,
+	auth_steer_rad: float,
+	auth_lat_accel: float,
+	auth_handbrake: bool,
+	bay_stability: float,
+	bay_warning: String,
+	bay_secured: bool
+) -> void:
+	_interp_target_pos = auth_pos
+	_interp_target_yaw = auth_yaw
+	forward_speed = auth_fwd_speed
+	current_steer_angle_rad = auth_steer_rad
+	lateral_acceleration = auth_lat_accel
+	is_handbrake_active = auth_handbrake
+	if cargo_bay != null:
+		cargo_bay.current_stability_ratio = bay_stability
+		cargo_bay.current_warning_text = bay_warning
+		if cargo_bay.strap_visuals != null:
+			cargo_bay.strap_visuals.visible = bay_secured
+
+	if not _has_net_snapshot:
+		_has_net_snapshot = true
+		global_position = auth_pos
+		rotation.y = auth_yaw
+
+
+func _interpolate_client_state(delta: float) -> void:
+	if not _has_net_snapshot:
+		return
+	if global_position.distance_to(_interp_target_pos) > 5.0:
+		global_position = _interp_target_pos
+	else:
+		global_position = global_position.lerp(_interp_target_pos, clampf(16.0 * delta, 0.0, 1.0))
+	rotation.y = lerp_angle(rotation.y, _interp_target_yaw, clampf(16.0 * delta, 0.0, 1.0))
 
 
 func reset_to_spawn() -> void:
